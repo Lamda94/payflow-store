@@ -1,5 +1,8 @@
 import { Transaction } from '../../domain/entities/transaction.entity';
-import { ProductNotFoundError, InsufficientStockError } from '../../domain/errors/domain.errors';
+import {
+  ProductNotFoundError,
+  InsufficientStockError,
+} from '../../domain/errors/domain.errors';
 import { ProductRepository } from '../../domain/ports/product.repository.port';
 import { TransactionRepository } from '../../domain/ports/transaction.repository.port';
 import { IdGenerator } from '../../domain/ports/id-generator.port';
@@ -24,7 +27,9 @@ export class CreateTransactionUseCase {
     private readonly idGenerator: IdGenerator,
   ) {}
 
-  async execute(input: CreateTransactionInput): Promise<CreateTransactionOutput> {
+  async execute(
+    input: CreateTransactionInput,
+  ): Promise<CreateTransactionOutput> {
     const product = await this.productRepository.findById(input.productId);
     if (!product) {
       throw new ProductNotFoundError(input.productId);

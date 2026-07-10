@@ -12,7 +12,9 @@ describe('buildIntegritySignature', () => {
       .update(`${reference}${amount}${currency}${key}`)
       .digest('hex');
 
-    expect(buildIntegritySignature(reference, amount, currency, key)).toBe(expected);
+    expect(buildIntegritySignature(reference, amount, currency, key)).toBe(
+      expected,
+    );
   });
 
   it('produces different signatures for different references', () => {

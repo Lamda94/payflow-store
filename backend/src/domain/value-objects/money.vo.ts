@@ -15,12 +15,17 @@ export class Money {
   }
 
   equals(other: Money): boolean {
-    return this.amountInCents === other.amountInCents && this.currency === other.currency;
+    return (
+      this.amountInCents === other.amountInCents &&
+      this.currency === other.currency
+    );
   }
 
   add(other: Money): Money {
     if (this.currency !== other.currency) {
-      throw new Error(`Cannot add different currencies: ${this.currency} and ${other.currency}`);
+      throw new Error(
+        `Cannot add different currencies: ${this.currency} and ${other.currency}`,
+      );
     }
     return new Money(this.amountInCents + other.amountInCents, this.currency);
   }

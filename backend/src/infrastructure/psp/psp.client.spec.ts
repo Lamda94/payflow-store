@@ -8,7 +8,11 @@ jest.mock('axios', () => ({
   })),
 }));
 
-const getMockedHttp = () => (axios.create as jest.Mock).mock.results[0].value as { get: jest.Mock; post: jest.Mock };
+const getMockedHttp = () =>
+  (axios.create as jest.Mock).mock.results[0].value as {
+    get: jest.Mock;
+    post: jest.Mock;
+  };
 
 describe('PspClient', () => {
   let client: PspClient;
@@ -23,7 +27,9 @@ describe('PspClient', () => {
   describe('getMerchantAcceptanceToken()', () => {
     it('returns acceptance token from merchant endpoint', async () => {
       http.get.mockResolvedValue({
-        data: { data: { presigned_acceptance: { acceptance_token: 'tok-abc' } } },
+        data: {
+          data: { presigned_acceptance: { acceptance_token: 'tok-abc' } },
+        },
       });
 
       const token = await client.getMerchantAcceptanceToken();
@@ -48,14 +54,20 @@ describe('PspClient', () => {
       expect(http.post).toHaveBeenCalledWith(
         '/tokens/cards',
         expect.objectContaining({ number: '4111111111111111' }),
-        expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer pub_key' }) }),
+        expect.objectContaining({
+          headers: expect.objectContaining({ Authorization: 'Bearer pub_key' }),
+        }),
       );
     });
   });
 
   describe('createTransaction()', () => {
     it('returns psp transaction id', async () => {
-      http.post.mockResolvedValue({ data: { data: { id: 'psp-txn-001', status: 'PENDING', status_message: null } } });
+      http.post.mockResolvedValue({
+        data: {
+          data: { id: 'psp-txn-001', status: 'PENDING', status_message: null },
+        },
+      });
 
       const id = await client.createTransaction({
         amount_in_cents: 199000,
@@ -64,14 +76,20 @@ describe('PspClient', () => {
         reference: 'ref-001',
         acceptance_token: 'tok-abc',
         signature: 'sig-xyz',
-        payment_method: { type: 'CARD', token: 'card-tok-123', installments: 1 },
+        payment_method: {
+          type: 'CARD',
+          token: 'card-tok-123',
+          installments: 1,
+        },
       });
 
       expect(id).toBe('psp-txn-001');
       expect(http.post).toHaveBeenCalledWith(
         '/transactions',
         expect.objectContaining({ reference: 'ref-001' }),
-        expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer prv_key' }) }),
+        expect.objectContaining({
+          headers: expect.objectContaining({ Authorization: 'Bearer prv_key' }),
+        }),
       );
     });
   });
@@ -79,14 +97,18 @@ describe('PspClient', () => {
   describe('getTransactionStatus()', () => {
     it('returns transaction status data', async () => {
       http.get.mockResolvedValue({
-        data: { data: { id: 'psp-txn-001', status: 'APPROVED', status_message: null } },
+        data: {
+          data: { id: 'psp-txn-001', status: 'APPROVED', status_message: null },
+        },
       });
 
       const data = await client.getTransactionStatus('psp-txn-001');
       expect(data.status).toBe('APPROVED');
       expect(http.get).toHaveBeenCalledWith(
         '/transactions/psp-txn-001',
-        expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer prv_key' }) }),
+        expect.objectContaining({
+          headers: expect.objectContaining({ Authorization: 'Bearer prv_key' }),
+        }),
       );
     });
   });

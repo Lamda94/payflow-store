@@ -14,12 +14,20 @@ const makeCardData = () => ({
   installments: 1,
 });
 
-const makeClient = (overrides: Partial<Record<keyof PspClient, jest.Mock>> = {}): PspClient =>
+const makeClient = (
+  overrides: Partial<Record<keyof PspClient, jest.Mock>> = {},
+): PspClient =>
   ({
-    getMerchantAcceptanceToken: jest.fn().mockResolvedValue('acceptance-token-123'),
+    getMerchantAcceptanceToken: jest
+      .fn()
+      .mockResolvedValue('acceptance-token-123'),
     tokenizeCard: jest.fn().mockResolvedValue('card-token-abc'),
     createTransaction: jest.fn().mockResolvedValue('psp-txn-001'),
-    getTransactionStatus: jest.fn().mockResolvedValue({ id: 'psp-txn-001', status: 'APPROVED', status_message: null }),
+    getTransactionStatus: jest.fn().mockResolvedValue({
+      id: 'psp-txn-001',
+      status: 'APPROVED',
+      status_message: null,
+    }),
     ...overrides,
   }) as unknown as PspClient;
 
@@ -27,7 +35,13 @@ describe('PspPaymentGateway', () => {
   describe('charge() — happy path APPROVED', () => {
     it('returns APPROVED result with pspTransactionId', async () => {
       const gateway = new PspPaymentGateway(makeClient(), INTEGRITY_KEY);
-      const result = await gateway.charge(makeCardData(), 199000, 'COP', 'ref-001', 'user@test.com');
+      const result = await gateway.charge(
+        makeCardData(),
+        199000,
+        'COP',
+        'ref-001',
+        'user@test.com',
+      );
 
       expect(result.status).toBe(PaymentResultStatus.APPROVED);
       expect(result.pspTransactionId).toBe('psp-txn-001');
@@ -36,9 +50,20 @@ describe('PspPaymentGateway', () => {
     it('sends correct integrity signature to createTransaction', async () => {
       const client = makeClient();
       const gateway = new PspPaymentGateway(client, INTEGRITY_KEY);
-      await gateway.charge(makeCardData(), 199000, 'COP', 'ref-001', 'user@test.com');
+      await gateway.charge(
+        makeCardData(),
+        199000,
+        'COP',
+        'ref-001',
+        'user@test.com',
+      );
 
-      const expectedSig = buildIntegritySignature('ref-001', 199000, 'COP', INTEGRITY_KEY);
+      const expectedSig = buildIntegritySignature(
+        'ref-001',
+        199000,
+        'COP',
+        INTEGRITY_KEY,
+      );
       expect(client.createTransaction).toHaveBeenCalledWith(
         expect.objectContaining({ signature: expectedSig }),
       );
@@ -47,7 +72,13 @@ describe('PspPaymentGateway', () => {
     it('passes card token and acceptance token to createTransaction', async () => {
       const client = makeClient();
       const gateway = new PspPaymentGateway(client, INTEGRITY_KEY);
-      await gateway.charge(makeCardData(), 199000, 'COP', 'ref-001', 'user@test.com');
+      await gateway.charge(
+        makeCardData(),
+        199000,
+        'COP',
+        'ref-001',
+        'user@test.com',
+      );
 
       expect(client.createTransaction).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -62,11 +93,19 @@ describe('PspPaymentGateway', () => {
     it('returns DECLINED when PSP declines the card', async () => {
       const client = makeClient({
         getTransactionStatus: jest.fn().mockResolvedValue({
-          id: 'psp-txn-001', status: 'DECLINED', status_message: 'Card declined',
+          id: 'psp-txn-001',
+          status: 'DECLINED',
+          status_message: 'Card declined',
         }),
       });
       const gateway = new PspPaymentGateway(client, INTEGRITY_KEY);
-      const result = await gateway.charge(makeCardData(), 199000, 'COP', 'ref-001', 'user@test.com');
+      const result = await gateway.charge(
+        makeCardData(),
+        199000,
+        'COP',
+        'ref-001',
+        'user@test.com',
+      );
 
       expect(result.status).toBe(PaymentResultStatus.DECLINED);
       expect(result.message).toBe('Card declined');
@@ -77,38 +116,73 @@ describe('PspPaymentGateway', () => {
     it('returns ERROR when PSP returns ERROR status', async () => {
       const client = makeClient({
         getTransactionStatus: jest.fn().mockResolvedValue({
-          id: 'psp-txn-001', status: 'ERROR', status_message: 'Internal error',
+          id: 'psp-txn-001',
+          status: 'ERROR',
+          status_message: 'Internal error',
         }),
       });
       const gateway = new PspPaymentGateway(client, INTEGRITY_KEY);
-      const result = await gateway.charge(makeCardData(), 199000, 'COP', 'ref-001', 'user@test.com');
+      const result = await gateway.charge(
+        makeCardData(),
+        199000,
+        'COP',
+        'ref-001',
+        'user@test.com',
+      );
 
       expect(result.status).toBe(PaymentResultStatus.ERROR);
     });
 
     it('returns ERROR when PSP client throws', async () => {
       const client = makeClient({
-        getMerchantAcceptanceToken: jest.fn().mockRejectedValue(new Error('Network error')),
+        getMerchantAcceptanceToken: jest
+          .fn()
+          .mockRejectedValue(new Error('Network error')),
       });
       const gateway = new PspPaymentGateway(client, INTEGRITY_KEY);
 
       await expect(
-        gateway.charge(makeCardData(), 199000, 'COP', 'ref-001', 'user@test.com'),
+        gateway.charge(
+          makeCardData(),
+          199000,
+          'COP',
+          'ref-001',
+          'user@test.com',
+        ),
       ).rejects.toThrow('Network error');
     });
   });
 
   describe('charge() — polling', () => {
     it('polls until terminal status is reached', async () => {
-      const getTransactionStatus = jest.fn()
-        .mockResolvedValueOnce({ id: 'psp-txn-001', status: 'PENDING', status_message: null })
-        .mockResolvedValueOnce({ id: 'psp-txn-001', status: 'PENDING', status_message: null })
-        .mockResolvedValueOnce({ id: 'psp-txn-001', status: 'APPROVED', status_message: null });
+      const getTransactionStatus = jest
+        .fn()
+        .mockResolvedValueOnce({
+          id: 'psp-txn-001',
+          status: 'PENDING',
+          status_message: null,
+        })
+        .mockResolvedValueOnce({
+          id: 'psp-txn-001',
+          status: 'PENDING',
+          status_message: null,
+        })
+        .mockResolvedValueOnce({
+          id: 'psp-txn-001',
+          status: 'APPROVED',
+          status_message: null,
+        });
 
       const client = makeClient({ getTransactionStatus });
       const gateway = new PspPaymentGateway(client, INTEGRITY_KEY, 30000);
 
-      const result = await gateway.charge(makeCardData(), 199000, 'COP', 'ref-001', 'user@test.com');
+      const result = await gateway.charge(
+        makeCardData(),
+        199000,
+        'COP',
+        'ref-001',
+        'user@test.com',
+      );
 
       expect(result.status).toBe(PaymentResultStatus.APPROVED);
       expect(getTransactionStatus).toHaveBeenCalledTimes(3);
@@ -116,13 +190,21 @@ describe('PspPaymentGateway', () => {
 
     it('returns ERROR when polling times out', async () => {
       const getTransactionStatus = jest.fn().mockResolvedValue({
-        id: 'psp-txn-001', status: 'PENDING', status_message: null,
+        id: 'psp-txn-001',
+        status: 'PENDING',
+        status_message: null,
       });
 
       const client = makeClient({ getTransactionStatus });
       const gateway = new PspPaymentGateway(client, INTEGRITY_KEY, 1);
 
-      const result = await gateway.charge(makeCardData(), 199000, 'COP', 'ref-001', 'user@test.com');
+      const result = await gateway.charge(
+        makeCardData(),
+        199000,
+        'COP',
+        'ref-001',
+        'user@test.com',
+      );
 
       expect(result.status).toBe(PaymentResultStatus.ERROR);
       expect(result.message).toContain('timed out');
@@ -131,11 +213,19 @@ describe('PspPaymentGateway', () => {
     it('maps VOIDED status to DECLINED', async () => {
       const client = makeClient({
         getTransactionStatus: jest.fn().mockResolvedValue({
-          id: 'psp-txn-001', status: 'VOIDED', status_message: null,
+          id: 'psp-txn-001',
+          status: 'VOIDED',
+          status_message: null,
         }),
       });
       const gateway = new PspPaymentGateway(client, INTEGRITY_KEY);
-      const result = await gateway.charge(makeCardData(), 199000, 'COP', 'ref-001', 'user@test.com');
+      const result = await gateway.charge(
+        makeCardData(),
+        199000,
+        'COP',
+        'ref-001',
+        'user@test.com',
+      );
       expect(result.status).toBe(PaymentResultStatus.DECLINED);
     });
   });

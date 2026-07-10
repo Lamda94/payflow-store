@@ -3,7 +3,10 @@ import { Product } from '../../domain/entities/product.entity';
 import { ProductRepository } from '../../domain/ports/product.repository.port';
 import { TransactionRepository } from '../../domain/ports/transaction.repository.port';
 import { IdGenerator } from '../../domain/ports/id-generator.port';
-import { ProductNotFoundError, InsufficientStockError } from '../../domain/errors/domain.errors';
+import {
+  ProductNotFoundError,
+  InsufficientStockError,
+} from '../../domain/errors/domain.errors';
 
 const makeProduct = (stock: number) =>
   new Product('p-1', 'Product', 'Desc', 'http://img.url', 100000, 'COP', stock);
@@ -55,7 +58,11 @@ describe('CreateTransactionUseCase', () => {
       makeIdGenerator(),
     );
 
-    await useCase.execute({ productId: 'p-1', quantity: 1, customerEmail: 'user@test.com' });
+    await useCase.execute({
+      productId: 'p-1',
+      quantity: 1,
+      customerEmail: 'user@test.com',
+    });
 
     expect(transactionRepo.save).toHaveBeenCalledTimes(1);
   });
@@ -68,7 +75,11 @@ describe('CreateTransactionUseCase', () => {
     );
 
     await expect(
-      useCase.execute({ productId: 'p-999', quantity: 1, customerEmail: 'user@test.com' }),
+      useCase.execute({
+        productId: 'p-999',
+        quantity: 1,
+        customerEmail: 'user@test.com',
+      }),
     ).rejects.toThrow(ProductNotFoundError);
   });
 
@@ -80,7 +91,11 @@ describe('CreateTransactionUseCase', () => {
     );
 
     await expect(
-      useCase.execute({ productId: 'p-1', quantity: 5, customerEmail: 'user@test.com' }),
+      useCase.execute({
+        productId: 'p-1',
+        quantity: 5,
+        customerEmail: 'user@test.com',
+      }),
     ).rejects.toThrow(InsufficientStockError);
   });
 
@@ -92,7 +107,13 @@ describe('CreateTransactionUseCase', () => {
       makeIdGenerator(),
     );
 
-    await useCase.execute({ productId: 'p-999', quantity: 1, customerEmail: 'user@test.com' }).catch(() => {});
+    await useCase
+      .execute({
+        productId: 'p-999',
+        quantity: 1,
+        customerEmail: 'user@test.com',
+      })
+      .catch(() => {});
 
     expect(transactionRepo.save).not.toHaveBeenCalled();
   });

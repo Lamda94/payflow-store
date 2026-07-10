@@ -13,7 +13,10 @@ import { PspPaymentGateway } from './psp-payment.gateway';
           process.env.PSP_PUBLIC_KEY ?? '',
           process.env.PSP_PRIVATE_KEY ?? '',
         );
-        return new PspPaymentGateway(client, process.env.PSP_INTEGRITY_KEY ?? '');
+        return new PspPaymentGateway(
+          client,
+          process.env.PSP_INTEGRITY_KEY ?? '',
+        );
       },
     },
   ],

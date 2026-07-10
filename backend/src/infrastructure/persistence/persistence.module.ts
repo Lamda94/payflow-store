@@ -11,7 +11,13 @@ import { TRANSACTION_REPOSITORY } from '../../domain/ports/transaction.repositor
 import { DELIVERY_REPOSITORY } from '../../domain/ports/delivery.repository.port';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ProductOrmEntity, TransactionOrmEntity, DeliveryOrmEntity])],
+  imports: [
+    TypeOrmModule.forFeature([
+      ProductOrmEntity,
+      TransactionOrmEntity,
+      DeliveryOrmEntity,
+    ]),
+  ],
   providers: [
     { provide: PRODUCT_REPOSITORY, useClass: TypeOrmProductRepository },
     { provide: TRANSACTION_REPOSITORY, useClass: TypeOrmTransactionRepository },

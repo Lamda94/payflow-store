@@ -62,6 +62,8 @@ export class SeedProducts1720000000003 implements MigrationInterface {
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DELETE FROM "products" WHERE id LIKE 'a1b2c3d4-%'`);
+    await queryRunner.query(
+      `DELETE FROM "products" WHERE id LIKE 'a1b2c3d4-%'`,
+    );
   }
 }

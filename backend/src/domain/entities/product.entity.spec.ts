@@ -2,7 +2,15 @@ import { Product } from './product.entity';
 import { InsufficientStockError } from '../errors/domain.errors';
 
 const makeProduct = (stock: number) =>
-  new Product('p-1', 'Test Product', 'Description', 'http://img.url', 199000, 'COP', stock);
+  new Product(
+    'p-1',
+    'Test Product',
+    'Description',
+    'http://img.url',
+    199000,
+    'COP',
+    stock,
+  );
 
 describe('Product', () => {
   describe('hasStock()', () => {
@@ -53,7 +61,11 @@ describe('Product', () => {
 
     it('does not modify stock when throwing', () => {
       const product = makeProduct(2);
-      try { product.decreaseStock(5); } catch { /* expected */ }
+      try {
+        product.decreaseStock(5);
+      } catch {
+        /* expected */
+      }
       expect(product.stock).toBe(2);
     });
   });

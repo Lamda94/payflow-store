@@ -34,6 +34,8 @@ describe('GetTransactionStatusUseCase', () => {
 
   it('throws TransactionNotFoundError when not found', async () => {
     const useCase = new GetTransactionStatusUseCase(makeRepo(null));
-    await expect(useCase.execute('txn-999')).rejects.toThrow(TransactionNotFoundError);
+    await expect(useCase.execute('txn-999')).rejects.toThrow(
+      TransactionNotFoundError,
+    );
   });
 });
