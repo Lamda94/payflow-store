@@ -78,6 +78,55 @@ describe('PaymentProcessingView', () => {
     expect(createTransactionMock).not.toHaveBeenCalled();
   });
 
+  it('creates a fresh transaction when the persisted one is already finalized (regression)', async () => {
+    // A finalized transaction survives in persisted state when the app dies
+    // before the result screen archives it; re-paying it makes the backend
+    // reject with "Transaction already processed" and the checkout looks
+    // like the Pay button silently does nothing.
+    const createTransactionMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        transactionId: 'stale-tx',
+        reference: 'ref-old',
+        amountInCents: 28900000,
+        currency: 'COP',
+      })
+      .mockResolvedValueOnce({
+        transactionId: 'fresh-tx',
+        reference: 'ref-new',
+        amountInCents: 28900000,
+        currency: 'COP',
+      });
+    const api: Partial<PayflowApi> = {
+      createTransaction: createTransactionMock,
+      payTransaction: (transactionId: string) =>
+        Promise.resolve({ status: 'APPROVED', transactionId }),
+    };
+    const store = createTestStore(api);
+    setupCheckoutState(store);
+    // Leave a finalized (already paid) transaction behind, as a killed
+    // session would.
+    await store.dispatch(
+      createTransaction({ productId: 'p1', quantity: 1, customerEmail: 'buyer@example.com' }),
+    );
+    store.dispatch({
+      type: 'transaction/pay/fulfilled',
+      payload: { ...store.getState().transaction.current, status: 'APPROVED' },
+    });
+    expect(selectCurrentTransaction(store.getState())?.status).toBe('APPROVED');
+    createTransactionMock.mockClear();
+
+    await render(<PaymentProcessingView onError={jest.fn()} />, {
+      wrapper: storeWrapper(store),
+    });
+
+    await waitFor(() => {
+      expect(selectCheckoutStep(store.getState())).toBe('result');
+    });
+    expect(createTransactionMock).toHaveBeenCalledTimes(1);
+    expect(selectCurrentTransaction(store.getState())?.id).toBe('fresh-tx');
+  });
+
   it('advances to result on DECLINED (a resolved answer, not an error)', async () => {
     const api: Partial<PayflowApi> = {
       createTransaction: () =>
