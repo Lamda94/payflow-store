@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { HomeScreen } from '../HomeScreen';
 import { createTestStore, storeWrapper } from '../../../test-utils/testStore';
 import { selectProduct } from '../../../store/slices/cartSlice';
@@ -118,7 +118,9 @@ describe('HomeScreen', () => {
       { wrapper: storeWrapper(store) },
     );
 
-    store.dispatch(selectProduct({ productId: 'p1', quantity: 2 }));
+    await act(async () => {
+      store.dispatch(selectProduct({ productId: 'p1', quantity: 2 }));
+    });
 
     await waitFor(() => {
       expect(getByTestId('cart-fab')).toBeTruthy();
