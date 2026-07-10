@@ -1,4 +1,8 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# PayFlow Store — Mobile
+
+Credit card payment checkout app. React Native (bare CLI) + TypeScript + Redux Toolkit.
+
+> Full architecture, testing and setup docs land at the end of mobile development (M6). This is the standard React Native CLI getting-started guide in the meantime.
 
 # Getting Started
 

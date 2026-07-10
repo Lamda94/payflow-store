@@ -42,7 +42,7 @@ export function createAppStore(
   });
 
   const persistor = persistStore(store, undefined, () => {
-    const current = store.getState().transaction.current;
+    const current = store.getState().transaction?.current;
     if (current && current.status === 'PENDING') {
       store.dispatch(fetchTransactionStatus(current.id));
     }
