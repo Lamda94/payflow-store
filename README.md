@@ -4,7 +4,7 @@ Prueba técnica — tienda con checkout de pago con tarjeta de crédito.
 
 **Stack**: NestJS 11 · TypeScript · TypeORM · PostgreSQL · React Native (próximamente)  
 **Arquitectura**: Hexagonal (Ports & Adapters)  
-**Deploy**: VPS OVH · Docker Compose · Cloudflare Full Strict TLS · GHCR · GitHub Actions
+**Deploy**: VPS OVH · Docker Compose · Cloudflare Full TLS · GHCR · GitHub Actions
 
 ---
 
@@ -116,8 +116,23 @@ El servicio `api` levanta con hot-reload. Cualquier cambio en `src/` recarga aut
 ```bash
 cd backend
 npm ci
-npm test              # unit tests (113 tests)
+npm test              # unit tests (118 tests)
 npm run test:cov      # cobertura con umbral global >= 80%
+```
+
+### E2E (flujo completo con PSP mockeado)
+
+Requiere un PostgreSQL alcanzable (en CI corre contra un service container efímero):
+
+```bash
+docker run -d --rm --name payflow_e2e_pg \
+  -e POSTGRES_DB=payflow_e2e -e POSTGRES_USER=payflow \
+  -e POSTGRES_HOST_AUTH_METHOD=trust -p 5439:5432 postgres:16-alpine
+
+DB_HOST=localhost DB_PORT=5439 DB_NAME=payflow_e2e DB_USER=payflow DB_PASSWORD= \
+  npm run test:e2e
+
+docker stop payflow_e2e_pg
 ```
 
 ### Resultados de cobertura
@@ -157,8 +172,8 @@ Ver `backend/.env.example` para la lista completa.
 
 | Workflow | Trigger | Pasos |
 |----------|---------|-------|
-| `backend.yml` | PR/push en `backend/**` | lint → test:cov → upload artifact |
-| `deploy.yml` | push a `main` en `backend/**` | build Docker → push GHCR → SSH VPS → migraciones → `up -d` |
+| `backend.yml` | PR/push en `backend/**` | lint → test:cov → upload artifact · e2e contra postgres efímero |
+| `deploy.yml` | push a `main` en `backend/**` | lint+tests → build Docker → push GHCR → SSH VPS → sync infra → migraciones → `up -d` |
 
 ### Secretos de GitHub necesarios
 
@@ -191,16 +206,9 @@ El directorio `/opt/payflow-store/` ya está creado en el VPS con:
 - `deploy/certs/` — certificado autofirmado para `payflow.luismendezdev.online`
 - `.env` — variables de entorno (completar PSP keys)
 
-A partir del primer setup, los deploys son automaticos via GitHub Actions al hacer push a `main`.
-
-# 4. Editar Caddyfile: reemplazar TU_DOMINIO por el dominio real
-
-# 5. Primer arranque
-docker compose -f docker-compose.prod.yml up -d
-docker compose -f docker-compose.prod.yml run --rm api npm run migration:run
-```
-
-A partir del primer setup, los deploys son automaticos via GitHub Actions al hacer push a `main`.
+A partir del primer setup, los deploys son automaticos via GitHub Actions al hacer push a `main`:
+el pipeline sincroniza `backend/deploy/docker-compose.prod.yml` y `backend/deploy/payflow.conf` al VPS,
+corre las migraciones (`migration:run:prod`) y levanta la nueva imagen.
 
 ## Mobile
 
