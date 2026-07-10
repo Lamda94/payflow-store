@@ -3,6 +3,10 @@ module.exports = {
   extends: '@react-native',
   overrides: [
     {
+      files: ['jest.setup.js'],
+      env: { jest: true },
+    },
+    {
       // R15.2: domain es TypeScript puro — cero React/RN/Redux/HTTP
       files: ['src/domain/**/*.{ts,tsx}'],
       rules: {
