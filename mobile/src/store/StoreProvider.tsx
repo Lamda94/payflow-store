@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { createAppStore, initStore } from './index';
+import { httpApi } from '../services/httpApi';
 
 interface Props {
   children: React.ReactNode;
@@ -20,7 +21,7 @@ export function StoreProvider({ children }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    initStore().then(created => {
+    initStore(httpApi).then(created => {
       if (!cancelled) {
         setApp(created);
       }
