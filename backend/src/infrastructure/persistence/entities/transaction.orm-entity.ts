@@ -37,7 +37,12 @@ export class TransactionOrmEntity {
   })
   status: TransactionStatus;
 
-  @Column({ name: 'psp_transaction_id', length: 100, nullable: true })
+  @Column({
+    name: 'psp_transaction_id',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
   pspTransactionId: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
