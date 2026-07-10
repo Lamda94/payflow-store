@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import { render, waitFor } from '@testing-library/react-native';
 import App from '../App';
 
 const mockUseColorScheme = jest.fn();
@@ -13,10 +13,15 @@ jest.mock('react-native/Libraries/Utilities/useColorScheme', () => ({
 }));
 
 describe('App', () => {
-  it.each(['light', 'dark'])('renders correctly in %s mode', async scheme => {
-    mockUseColorScheme.mockReturnValue(scheme);
-    await ReactTestRenderer.act(() => {
-      ReactTestRenderer.create(<App />);
-    });
-  });
+  it.each(['light', 'dark'])(
+    'boots the store and renders the placeholder in %s mode',
+    async scheme => {
+      mockUseColorScheme.mockReturnValue(scheme);
+      const result = await render(<App />);
+
+      await waitFor(() => {
+        expect(result.getByText('PayFlow Store')).toBeTruthy();
+      });
+    },
+  );
 });
