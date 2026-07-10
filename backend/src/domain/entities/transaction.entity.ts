@@ -1,4 +1,7 @@
-import { InvalidTransactionStateError, TransactionAlreadyProcessedError } from '../errors/domain.errors';
+import {
+  InvalidTransactionStateError,
+  TransactionAlreadyProcessedError,
+} from '../errors/domain.errors';
 
 export enum TransactionStatus {
   PENDING = 'PENDING',

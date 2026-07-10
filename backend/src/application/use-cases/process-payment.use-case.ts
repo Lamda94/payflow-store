@@ -5,7 +5,11 @@ import {
   TransactionAlreadyProcessedError,
   ProductNotFoundError,
 } from '../../domain/errors/domain.errors';
-import { CardData, PaymentGateway, PaymentResultStatus } from '../../domain/ports/payment-gateway.port';
+import {
+  CardData,
+  PaymentGateway,
+  PaymentResultStatus,
+} from '../../domain/ports/payment-gateway.port';
 import { ProductRepository } from '../../domain/ports/product.repository.port';
 import { TransactionRepository } from '../../domain/ports/transaction.repository.port';
 import { DeliveryRepository } from '../../domain/ports/delivery.repository.port';
@@ -32,7 +36,9 @@ export class ProcessPaymentUseCase {
   ) {}
 
   async execute(input: ProcessPaymentInput): Promise<ProcessPaymentOutput> {
-    const transaction = await this.transactionRepository.findById(input.transactionId);
+    const transaction = await this.transactionRepository.findById(
+      input.transactionId,
+    );
     if (!transaction) {
       throw new TransactionNotFoundError(input.transactionId);
     }
@@ -41,7 +47,9 @@ export class ProcessPaymentUseCase {
       throw new TransactionAlreadyProcessedError(input.transactionId);
     }
 
-    const product = await this.productRepository.findById(transaction.productId);
+    const product = await this.productRepository.findById(
+      transaction.productId,
+    );
     if (!product) {
       throw new ProductNotFoundError(transaction.productId);
     }

@@ -40,19 +40,25 @@ describe('Transaction', () => {
     it('throws when already APPROVED', () => {
       const txn = makePendingTransaction();
       txn.approve('psp-123', LATER);
-      expect(() => txn.approve('psp-456', LATER)).toThrow(TransactionAlreadyProcessedError);
+      expect(() => txn.approve('psp-456', LATER)).toThrow(
+        TransactionAlreadyProcessedError,
+      );
     });
 
     it('throws when DECLINED', () => {
       const txn = makePendingTransaction();
       txn.decline('psp-123', LATER);
-      expect(() => txn.approve('psp-456', LATER)).toThrow(TransactionAlreadyProcessedError);
+      expect(() => txn.approve('psp-456', LATER)).toThrow(
+        TransactionAlreadyProcessedError,
+      );
     });
 
     it('throws when ERROR', () => {
       const txn = makePendingTransaction();
       txn.markAsError(LATER);
-      expect(() => txn.approve('psp-456', LATER)).toThrow(TransactionAlreadyProcessedError);
+      expect(() => txn.approve('psp-456', LATER)).toThrow(
+        TransactionAlreadyProcessedError,
+      );
     });
   });
 
@@ -68,7 +74,9 @@ describe('Transaction', () => {
     it('throws when already DECLINED', () => {
       const txn = makePendingTransaction();
       txn.decline('psp-123', LATER);
-      expect(() => txn.decline('psp-456', LATER)).toThrow(TransactionAlreadyProcessedError);
+      expect(() => txn.decline('psp-456', LATER)).toThrow(
+        TransactionAlreadyProcessedError,
+      );
     });
   });
 
@@ -89,7 +97,9 @@ describe('Transaction', () => {
     it('throws when already finished', () => {
       const txn = makePendingTransaction();
       txn.markAsError(LATER);
-      expect(() => txn.markAsError(LATER)).toThrow(TransactionAlreadyProcessedError);
+      expect(() => txn.markAsError(LATER)).toThrow(
+        TransactionAlreadyProcessedError,
+      );
     });
   });
 });

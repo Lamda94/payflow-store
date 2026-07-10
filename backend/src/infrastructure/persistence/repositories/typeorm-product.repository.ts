@@ -22,7 +22,7 @@ export class TypeOrmProductRepository implements ProductRepository {
       .where('p.stock > 0')
       .orderBy('p.name', 'ASC')
       .getMany();
-    return orms.map(ProductMapper.toDomain);
+    return orms.map((orm) => ProductMapper.toDomain(orm));
   }
 
   async save(product: Product): Promise<void> {

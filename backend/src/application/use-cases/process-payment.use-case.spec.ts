@@ -1,10 +1,16 @@
 import { ProcessPaymentUseCase } from './process-payment.use-case';
-import { Transaction, TransactionStatus } from '../../domain/entities/transaction.entity';
+import {
+  Transaction,
+  TransactionStatus,
+} from '../../domain/entities/transaction.entity';
 import { Product } from '../../domain/entities/product.entity';
 import { TransactionRepository } from '../../domain/ports/transaction.repository.port';
 import { ProductRepository } from '../../domain/ports/product.repository.port';
 import { DeliveryRepository } from '../../domain/ports/delivery.repository.port';
-import { PaymentGateway, PaymentResultStatus } from '../../domain/ports/payment-gateway.port';
+import {
+  PaymentGateway,
+  PaymentResultStatus,
+} from '../../domain/ports/payment-gateway.port';
 import { IdGenerator } from '../../domain/ports/id-generator.port';
 import {
   TransactionNotFoundError,
@@ -30,7 +36,9 @@ const makePendingTxn = () =>
 const makeProduct = (stock = 10) =>
   new Product('p-1', 'Product', 'Desc', 'http://img.url', 100000, 'COP', stock);
 
-const makeTransactionRepo = (txn: Transaction | null): TransactionRepository => ({
+const makeTransactionRepo = (
+  txn: Transaction | null,
+): TransactionRepository => ({
   findById: jest.fn().mockResolvedValue(txn),
   findByReference: jest.fn(),
   save: jest.fn().mockResolvedValue(undefined),
@@ -71,11 +79,17 @@ describe('ProcessPaymentUseCase', () => {
       const deliveryRepo = makeDeliveryRepo();
 
       const useCase = new ProcessPaymentUseCase(
-        txnRepo, productRepo, deliveryRepo,
-        makeGateway(PaymentResultStatus.APPROVED), makeIdGenerator(),
+        txnRepo,
+        productRepo,
+        deliveryRepo,
+        makeGateway(PaymentResultStatus.APPROVED),
+        makeIdGenerator(),
       );
 
-      const result = await useCase.execute({ transactionId: 'txn-1', cardData: makeCardData() });
+      const result = await useCase.execute({
+        transactionId: 'txn-1',
+        cardData: makeCardData(),
+      });
 
       expect(result.status).toBe(TransactionStatus.APPROVED);
       expect(result.pspTransactionId).toBe('psp-123');
@@ -92,11 +106,17 @@ describe('ProcessPaymentUseCase', () => {
       const deliveryRepo = makeDeliveryRepo();
 
       const useCase = new ProcessPaymentUseCase(
-        txnRepo, productRepo, deliveryRepo,
-        makeGateway(PaymentResultStatus.DECLINED), makeIdGenerator(),
+        txnRepo,
+        productRepo,
+        deliveryRepo,
+        makeGateway(PaymentResultStatus.DECLINED),
+        makeIdGenerator(),
       );
 
-      const result = await useCase.execute({ transactionId: 'txn-1', cardData: makeCardData() });
+      const result = await useCase.execute({
+        transactionId: 'txn-1',
+        cardData: makeCardData(),
+      });
 
       expect(result.status).toBe(TransactionStatus.DECLINED);
       expect(productRepo.save).not.toHaveBeenCalled();
@@ -111,11 +131,17 @@ describe('ProcessPaymentUseCase', () => {
       const deliveryRepo = makeDeliveryRepo();
 
       const useCase = new ProcessPaymentUseCase(
-        txnRepo, productRepo, deliveryRepo,
-        makeGateway(PaymentResultStatus.ERROR), makeIdGenerator(),
+        txnRepo,
+        productRepo,
+        deliveryRepo,
+        makeGateway(PaymentResultStatus.ERROR),
+        makeIdGenerator(),
       );
 
-      const result = await useCase.execute({ transactionId: 'txn-1', cardData: makeCardData() });
+      const result = await useCase.execute({
+        transactionId: 'txn-1',
+        cardData: makeCardData(),
+      });
 
       expect(result.status).toBe(TransactionStatus.ERROR);
       expect(productRepo.save).not.toHaveBeenCalled();
@@ -126,8 +152,11 @@ describe('ProcessPaymentUseCase', () => {
   describe('error cases', () => {
     it('throws TransactionNotFoundError when transaction does not exist', async () => {
       const useCase = new ProcessPaymentUseCase(
-        makeTransactionRepo(null), makeProductRepo(makeProduct()),
-        makeDeliveryRepo(), makeGateway(PaymentResultStatus.APPROVED), makeIdGenerator(),
+        makeTransactionRepo(null),
+        makeProductRepo(makeProduct()),
+        makeDeliveryRepo(),
+        makeGateway(PaymentResultStatus.APPROVED),
+        makeIdGenerator(),
       );
 
       await expect(
@@ -140,8 +169,11 @@ describe('ProcessPaymentUseCase', () => {
       txn.approve('psp-123', NOW);
 
       const useCase = new ProcessPaymentUseCase(
-        makeTransactionRepo(txn), makeProductRepo(makeProduct()),
-        makeDeliveryRepo(), makeGateway(PaymentResultStatus.APPROVED), makeIdGenerator(),
+        makeTransactionRepo(txn),
+        makeProductRepo(makeProduct()),
+        makeDeliveryRepo(),
+        makeGateway(PaymentResultStatus.APPROVED),
+        makeIdGenerator(),
       );
 
       await expect(
@@ -151,8 +183,11 @@ describe('ProcessPaymentUseCase', () => {
 
     it('throws ProductNotFoundError when product no longer exists', async () => {
       const useCase = new ProcessPaymentUseCase(
-        makeTransactionRepo(makePendingTxn()), makeProductRepo(null),
-        makeDeliveryRepo(), makeGateway(PaymentResultStatus.APPROVED), makeIdGenerator(),
+        makeTransactionRepo(makePendingTxn()),
+        makeProductRepo(null),
+        makeDeliveryRepo(),
+        makeGateway(PaymentResultStatus.APPROVED),
+        makeIdGenerator(),
       );
 
       await expect(
@@ -166,11 +201,16 @@ describe('ProcessPaymentUseCase', () => {
       const gateway = makeGateway(PaymentResultStatus.APPROVED);
 
       const useCase = new ProcessPaymentUseCase(
-        makeTransactionRepo(txn), makeProductRepo(makeProduct()),
-        makeDeliveryRepo(), gateway, makeIdGenerator(),
+        makeTransactionRepo(txn),
+        makeProductRepo(makeProduct()),
+        makeDeliveryRepo(),
+        gateway,
+        makeIdGenerator(),
       );
 
-      await useCase.execute({ transactionId: 'txn-1', cardData: makeCardData() }).catch(() => {});
+      await useCase
+        .execute({ transactionId: 'txn-1', cardData: makeCardData() })
+        .catch(() => {});
 
       expect(gateway.charge).not.toHaveBeenCalled();
     });

@@ -1,4 +1,7 @@
-import { Transaction, TransactionStatus } from '../../../domain/entities/transaction.entity';
+import {
+  Transaction,
+  TransactionStatus,
+} from '../../../domain/entities/transaction.entity';
 import { TransactionOrmEntity } from '../entities/transaction.orm-entity';
 import { TransactionMapper } from './transaction.mapper';
 
@@ -38,9 +41,15 @@ describe('TransactionMapper', () => {
 
   it('maps domain to ORM correctly', () => {
     const domain = Transaction.createPending({
-      id: 'txn-1', reference: 'ref-001', productId: 'p-1',
-      quantity: 2, amountInCents: 200000, currency: 'COP',
-      customerEmail: 'user@test.com', createdAt: NOW, updatedAt: NOW,
+      id: 'txn-1',
+      reference: 'ref-001',
+      productId: 'p-1',
+      quantity: 2,
+      amountInCents: 200000,
+      currency: 'COP',
+      customerEmail: 'user@test.com',
+      createdAt: NOW,
+      updatedAt: NOW,
     });
     const orm = TransactionMapper.toOrm(domain);
     expect(orm).toBeInstanceOf(TransactionOrmEntity);
@@ -50,9 +59,15 @@ describe('TransactionMapper', () => {
 
   it('maps approved domain to ORM with pspTransactionId', () => {
     const domain = Transaction.createPending({
-      id: 'txn-1', reference: 'ref-001', productId: 'p-1',
-      quantity: 1, amountInCents: 100000, currency: 'COP',
-      customerEmail: 'user@test.com', createdAt: NOW, updatedAt: NOW,
+      id: 'txn-1',
+      reference: 'ref-001',
+      productId: 'p-1',
+      quantity: 1,
+      amountInCents: 100000,
+      currency: 'COP',
+      customerEmail: 'user@test.com',
+      createdAt: NOW,
+      updatedAt: NOW,
     });
     domain.approve('psp-123', new Date());
     const orm = TransactionMapper.toOrm(domain);

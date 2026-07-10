@@ -50,7 +50,9 @@ describe('Money', () => {
     });
 
     it('throws when currencies differ', () => {
-      expect(() => Money.of(100, 'COP').add(Money.of(100, 'USD'))).toThrow('Cannot add different currencies');
+      expect(() => Money.of(100, 'COP').add(Money.of(100, 'USD'))).toThrow(
+        'Cannot add different currencies',
+      );
     });
   });
 
@@ -60,11 +62,15 @@ describe('Money', () => {
     });
 
     it('throws on float factor', () => {
-      expect(() => Money.of(1000, 'COP').multiply(1.5)).toThrow('non-negative integer');
+      expect(() => Money.of(1000, 'COP').multiply(1.5)).toThrow(
+        'non-negative integer',
+      );
     });
 
     it('throws on negative factor', () => {
-      expect(() => Money.of(1000, 'COP').multiply(-1)).toThrow('non-negative integer');
+      expect(() => Money.of(1000, 'COP').multiply(-1)).toThrow(
+        'non-negative integer',
+      );
     });
   });
 

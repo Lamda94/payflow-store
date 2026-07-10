@@ -42,14 +42,21 @@ export class PspClient {
   private readonly publicKey: string;
   private readonly privateKey: string;
 
-  constructor(baseUrl: string, publicKey: string, privateKey: string, timeoutMs = 10000) {
+  constructor(
+    baseUrl: string,
+    publicKey: string,
+    privateKey: string,
+    timeoutMs = 10000,
+  ) {
     this.publicKey = publicKey;
     this.privateKey = privateKey;
     this.http = axios.create({ baseURL: baseUrl, timeout: timeoutMs });
   }
 
   async getMerchantAcceptanceToken(): Promise<string> {
-    const res = await this.http.get<PspMerchantResponse>(`/merchants/${this.publicKey}`);
+    const res = await this.http.get<PspMerchantResponse>(
+      `/merchants/${this.publicKey}`,
+    );
     return res.data.data.presigned_acceptance.acceptance_token;
   }
 
@@ -75,16 +82,25 @@ export class PspClient {
   }
 
   async createTransaction(body: PspCreateTransactionBody): Promise<string> {
-    const res = await this.http.post<PspTransactionResponse>('/transactions', body, {
-      headers: { Authorization: `Bearer ${this.privateKey}` },
-    });
+    const res = await this.http.post<PspTransactionResponse>(
+      '/transactions',
+      body,
+      {
+        headers: { Authorization: `Bearer ${this.privateKey}` },
+      },
+    );
     return res.data.data.id;
   }
 
-  async getTransactionStatus(pspTransactionId: string): Promise<PspTransactionResponse['data']> {
-    const res = await this.http.get<PspTransactionResponse>(`/transactions/${pspTransactionId}`, {
-      headers: { Authorization: `Bearer ${this.privateKey}` },
-    });
+  async getTransactionStatus(
+    pspTransactionId: string,
+  ): Promise<PspTransactionResponse['data']> {
+    const res = await this.http.get<PspTransactionResponse>(
+      `/transactions/${pspTransactionId}`,
+      {
+        headers: { Authorization: `Bearer ${this.privateKey}` },
+      },
+    );
     return res.data.data;
   }
 }

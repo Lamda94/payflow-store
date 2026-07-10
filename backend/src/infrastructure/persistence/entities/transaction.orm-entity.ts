@@ -1,4 +1,10 @@
-import { Column, CreateDateColumn, Entity, PrimaryColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { TransactionStatus } from '../../../domain/entities/transaction.entity';
 
 @Entity('transactions')
@@ -24,7 +30,11 @@ export class TransactionOrmEntity {
   @Column({ name: 'customer_email', length: 255 })
   customerEmail: string;
 
-  @Column({ type: 'enum', enum: TransactionStatus, default: TransactionStatus.PENDING })
+  @Column({
+    type: 'enum',
+    enum: TransactionStatus,
+    default: TransactionStatus.PENDING,
+  })
   status: TransactionStatus;
 
   @Column({ name: 'psp_transaction_id', length: 100, nullable: true })

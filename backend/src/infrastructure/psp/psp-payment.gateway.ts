@@ -35,7 +35,12 @@ export class PspPaymentGateway implements PaymentGateway {
       }),
     ]);
 
-    const signature = buildIntegritySignature(reference, amountInCents, currency, this.integrityKey);
+    const signature = buildIntegritySignature(
+      reference,
+      amountInCents,
+      currency,
+      this.integrityKey,
+    );
 
     const pspTransactionId = await this.client.createTransaction({
       amount_in_cents: amountInCents,
@@ -54,7 +59,9 @@ export class PspPaymentGateway implements PaymentGateway {
     return this.pollForResult(pspTransactionId);
   }
 
-  private async pollForResult(pspTransactionId: string): Promise<PaymentResult> {
+  private async pollForResult(
+    pspTransactionId: string,
+  ): Promise<PaymentResult> {
     const deadline = Date.now() + this.pollTimeoutMs;
 
     while (Date.now() < deadline) {

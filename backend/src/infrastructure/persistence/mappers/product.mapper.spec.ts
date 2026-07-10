@@ -24,7 +24,15 @@ describe('ProductMapper', () => {
   });
 
   it('maps domain to ORM correctly', () => {
-    const domain = new Product('p-1', 'Test', 'Desc', 'http://img.url', 100000, 'COP', 5);
+    const domain = new Product(
+      'p-1',
+      'Test',
+      'Desc',
+      'http://img.url',
+      100000,
+      'COP',
+      5,
+    );
     const orm = ProductMapper.toOrm(domain);
     expect(orm).toBeInstanceOf(ProductOrmEntity);
     expect(orm.id).toBe('p-1');
@@ -32,7 +40,15 @@ describe('ProductMapper', () => {
   });
 
   it('round-trips domain → orm → domain', () => {
-    const original = new Product('p-1', 'Test', 'Desc', 'http://img.url', 100000, 'COP', 5);
+    const original = new Product(
+      'p-1',
+      'Test',
+      'Desc',
+      'http://img.url',
+      100000,
+      'COP',
+      5,
+    );
     const restored = ProductMapper.toDomain(ProductMapper.toOrm(original));
     expect(restored.id).toBe(original.id);
     expect(restored.stock).toBe(original.stock);
