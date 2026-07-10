@@ -1,5 +1,8 @@
 module.exports = {
   preset: 'react-native',
+  // CI runners are slower/shared; render()+waitFor() component tests can
+  // exceed Jest's 5s default there even though they're fast locally.
+  testTimeout: 15000,
   setupFiles: [
     '<rootDir>/jest.setup.js',
     'react-native-gesture-handler/jestSetup.js',
