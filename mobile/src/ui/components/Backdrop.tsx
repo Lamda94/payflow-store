@@ -1,5 +1,13 @@
 import React from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { colors, spacing } from '../theme';
 
 interface Props {
@@ -13,6 +21,12 @@ interface Props {
  * dimmed and visible; the front layer is a rounded sheet that slides up
  * from the bottom holding the active step's content (card form, then
  * summary). Dismissible by tapping the scrim or the Android back button.
+ *
+ * Wrapped in KeyboardAvoidingView because RN's Modal opens its own native
+ * window on Android, which doesn't inherit the host Activity's
+ * windowSoftInputMode resize behavior — without this, the keyboard simply
+ * covers whatever input is focused instead of the sheet shrinking to make
+ * room for it.
  */
 export function Backdrop({ visible, onClose, children }: Props) {
   return (
@@ -23,7 +37,10 @@ export function Backdrop({ visible, onClose, children }: Props) {
       onRequestClose={onClose}
       testID="backdrop-modal"
     >
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <Pressable
           style={styles.scrim}
           onPress={onClose}
@@ -36,7 +53,7 @@ export function Backdrop({ visible, onClose, children }: Props) {
             {children}
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

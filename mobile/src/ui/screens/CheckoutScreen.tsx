@@ -1,20 +1,26 @@
-import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
+  clearCart,
   selectCart,
   selectCartProduct,
   selectCartTotalInCents,
 } from '../../store/slices/cartSlice';
 import {
-  openCheckout,
   resetCheckout,
+  openCheckout,
   selectCheckoutStep,
 } from '../../store/slices/checkoutSlice';
+import { fetchProducts } from '../../store/slices/productsSlice';
+import { archiveCurrentTransaction } from '../../store/slices/transactionSlice';
 import { formatMoney } from '../../domain/money';
 import { Backdrop } from '../components/Backdrop';
 import { CardInfoForm } from '../components/CardInfoForm';
 import { PaymentSummaryView } from '../components/PaymentSummaryView';
+import { PaymentProcessingView } from '../components/PaymentProcessingView';
+import { PaymentResultView } from '../components/PaymentResultView';
+import { Toast } from '../components/Toast';
 import { colors, spacing, typography } from '../theme';
 
 export function CheckoutScreen() {
@@ -23,6 +29,7 @@ export function CheckoutScreen() {
   const product = useAppSelector(selectCartProduct);
   const totalInCents = useAppSelector(selectCartTotalInCents);
   const step = useAppSelector(selectCheckoutStep);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   if (!product) {
     return (
@@ -30,6 +37,19 @@ export function CheckoutScreen() {
         <Text style={styles.message}>Your cart is empty.</Text>
       </View>
     );
+  }
+
+  function handleBackdropClose() {
+    if (step === 'processing') {
+      // A request is in flight — don't let the user abandon it mid-way.
+      return;
+    }
+    if (step === 'result') {
+      dispatch(archiveCurrentTransaction());
+      dispatch(clearCart());
+      dispatch(fetchProducts());
+    }
+    dispatch(resetCheckout());
   }
 
   return (
@@ -56,16 +76,14 @@ export function CheckoutScreen() {
         <Text style={styles.payButtonText}>Pay with credit card</Text>
       </Pressable>
 
-      <Backdrop visible={step !== 'idle'} onClose={() => dispatch(resetCheckout())}>
+      <Backdrop visible={step !== 'idle'} onClose={handleBackdropClose}>
         {step === 'card-info' && <CardInfoForm />}
         {step === 'summary' && <PaymentSummaryView />}
-        {(step === 'processing' || step === 'result') && (
-          <View style={styles.processing} testID="checkout-processing">
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.message}>Processing payment…</Text>
-          </View>
-        )}
+        {step === 'processing' && <PaymentProcessingView onError={setToastMessage} />}
+        {step === 'result' && <PaymentResultView />}
       </Backdrop>
+
+      <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
     </View>
   );
 }
@@ -133,10 +151,5 @@ const styles = StyleSheet.create({
     ...typography.subtitle,
     color: colors.background,
     fontWeight: '700',
-  },
-  processing: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xl,
   },
 });
