@@ -57,7 +57,14 @@ export function PaymentProcessingView({ onError }: Props) {
 
     async function run() {
       try {
-        let transactionId = currentTransaction?.id;
+        // Only a PENDING transaction can be (re)paid — reusing one lets a
+        // retry after a failed pay skip re-creating it. A *finalized* one
+        // (APPROVED/DECLINED/ERROR) can linger in persisted state when the
+        // app dies before the result screen archives it, and the backend
+        // rejects paying it again ("Transaction already processed"), so a
+        // new purchase must start from a fresh transaction.
+        let transactionId =
+          currentTransaction?.status === 'PENDING' ? currentTransaction.id : undefined;
         if (!transactionId) {
           const created = await dispatch(
             createTransaction({

@@ -66,6 +66,34 @@ describe('CardInfoForm', () => {
     expect(getByTestId('expiration-input').props.value).toBe('12/30');
   });
 
+  it('accepts a two-digit year typed one digit at a time (regression)', async () => {
+    // Reproduces a real bug: typing the expiration digit by digit (as a
+    // real keyboard does, not one bulk changeText call) used to expand
+    // the year to 4 digits after the *first* year digit, corrupting the
+    // round-trip and making it impossible to ever type a second year
+    // digit greater than what got silently invented.
+    const store = createTestStore();
+    const { getByTestId } = await render(<CardInfoForm />, { wrapper: storeWrapper(store) });
+    const field = () => getByTestId('expiration-input');
+
+    fireEvent.changeText(field(), '1');
+    await waitFor(() => expect(field().props.value).toBe('1'));
+
+    fireEvent.changeText(field(), '12');
+    await waitFor(() => expect(field().props.value).toBe('12'));
+
+    fireEvent.changeText(field(), '123');
+    await waitFor(() => expect(field().props.value).toBe('12/3'));
+
+    fireEvent.changeText(field(), '12/35');
+    await waitFor(() => {
+      expect(field().props.value).toBe('12/35');
+      const card = selectCardDraft(store.getState());
+      expect(card.expirationMonth).toBe('12');
+      expect(card.expirationYear).toBe('2035');
+    });
+  });
+
   it('shows a field-level error for an invalid email, only once something was typed', async () => {
     const store = createTestStore();
     const { getByTestId, queryByTestId } = await render(<CardInfoForm />, {

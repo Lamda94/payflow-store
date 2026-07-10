@@ -37,13 +37,20 @@ export function CardInfoForm() {
   const emailValid = isValidEmail(customerEmail);
   const canContinue = Object.keys(errors).length === 0 && emailValid;
 
+  // expirationYear is only ever a *complete* 4-digit value (once the user
+  // has typed both year digits) or the raw partial digits typed so far
+  // (0 or 1 char) — never expand a partial segment, or reconstructing the
+  // display from it (via slice(-2)) silently invents a phantom digit and
+  // the field gets stuck unable to accept a second year digit.
   const expiryDigits =
-    card.expirationMonth + (card.expirationYear ? card.expirationYear.slice(-2) : '');
+    card.expirationMonth +
+    (card.expirationYear.length === 4 ? card.expirationYear.slice(-2) : card.expirationYear);
 
   function handleExpirationChange(text: string) {
     const digits = text.replace(/\D/g, '').slice(0, 4);
     const month = digits.slice(0, 2);
-    const year = digits.length > 2 ? expandTwoDigitYear(digits.slice(2)) : '';
+    const yearDigits = digits.slice(2);
+    const year = yearDigits.length === 2 ? expandTwoDigitYear(yearDigits) : yearDigits;
     dispatch(setCardField({ field: 'expirationMonth', value: month }));
     dispatch(setCardField({ field: 'expirationYear', value: year }));
   }
