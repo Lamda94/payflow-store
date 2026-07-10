@@ -11,6 +11,7 @@ import {
   SafeAreaProvider,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
+import { StoreProvider } from './src/store/StoreProvider';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -18,7 +19,9 @@ function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
+      <StoreProvider>
+        <AppContent />
+      </StoreProvider>
     </SafeAreaProvider>
   );
 }
