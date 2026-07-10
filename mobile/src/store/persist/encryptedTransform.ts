@@ -13,7 +13,14 @@ export function createEncryptedTransform(secretKey: string) {
     outboundState => {
       const bytes = CryptoJS.AES.decrypt(outboundState, secretKey);
       const json = bytes.toString(CryptoJS.enc.Utf8);
-      return json ? JSON.parse(json) : undefined;
+      if (!json) {
+        // Wrong/rotated key or corrupted data: fail loudly so
+        // redux-persist discards the whole persisted snapshot and falls
+        // back to the reducers' initial state, instead of silently
+        // handing back `undefined` for this slice.
+        throw new Error('createEncryptedTransform: unable to decrypt persisted state');
+      }
+      return JSON.parse(json);
     },
   );
 }

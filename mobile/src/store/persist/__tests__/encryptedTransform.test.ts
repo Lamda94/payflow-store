@@ -23,25 +23,20 @@ describe('createEncryptedTransform', () => {
     expect(a).not.toBe(b);
   });
 
-  it('fails to recover plaintext with the wrong key', () => {
-    const original = { current: { id: 'tx1' } };
+  it('throws instead of silently returning garbage when the key is wrong', () => {
     const encrypted = createEncryptedTransform(KEY).in(
-      original,
+      { current: { id: 'tx1' } },
       'transaction',
       {},
     );
 
     const wrongKeyTransform = createEncryptedTransform('a-different-key');
-    let result: unknown;
-    let threw = false;
-    try {
-      result = wrongKeyTransform.out(encrypted as string, 'transaction', {});
-    } catch {
-      threw = true;
-    }
-
-    const recoveredOriginal =
-      !threw && JSON.stringify(result) === JSON.stringify(original);
-    expect(recoveredOriginal).toBe(false);
+    // Throwing (rather than returning undefined/garbage) is what lets
+    // redux-persist discard the whole corrupt snapshot and fall back to
+    // the reducers' initial state instead of crashing downstream code
+    // that assumes a rehydrated slice is always a full, valid object.
+    expect(() =>
+      wrongKeyTransform.out(encrypted as string, 'transaction', {}),
+    ).toThrow();
   });
 });
