@@ -22,13 +22,13 @@ describe('App', () => {
   });
 
   it.each(['light', 'dark'])(
-    'boots the store and renders the placeholder in %s mode',
+    'boots the store and renders the Splash screen in %s mode',
     async scheme => {
       mockUseColorScheme.mockReturnValue(scheme);
       const result = await render(<App />);
 
       await waitFor(() => {
-        expect(result.getByText('PayFlow Store')).toBeTruthy();
+        expect(result.getByTestId('splash-screen')).toBeTruthy();
       });
     },
   );
