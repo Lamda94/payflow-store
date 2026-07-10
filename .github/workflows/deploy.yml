@@ -69,7 +69,7 @@ jobs:
 
             docker compose pull payflow_api
 
-            docker compose run --rm payflow_api npm run migration:run
+            docker compose run --rm payflow_api npm run migration:run:prod
 
             docker compose up -d
 
