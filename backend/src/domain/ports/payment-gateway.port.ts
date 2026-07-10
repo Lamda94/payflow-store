@@ -13,11 +13,17 @@ export enum PaymentResultStatus {
   ERROR = 'ERROR',
 }
 
-export interface PaymentResult {
-  status: PaymentResultStatus;
-  pspTransactionId: string;
-  message?: string;
-}
+export type PaymentResult =
+  | {
+      status: PaymentResultStatus.APPROVED | PaymentResultStatus.DECLINED;
+      pspTransactionId: string;
+      message?: string;
+    }
+  | {
+      status: PaymentResultStatus.ERROR;
+      pspTransactionId?: string;
+      message?: string;
+    };
 
 export interface PaymentGateway {
   charge(

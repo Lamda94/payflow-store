@@ -69,6 +69,22 @@ describe('PspPaymentGateway', () => {
       );
     });
 
+    it('tokenizes the card with a 2-digit expiration year (PSP format)', async () => {
+      const client = makeClient();
+      const gateway = new PspPaymentGateway(client, INTEGRITY_KEY);
+      await gateway.charge(
+        makeCardData(),
+        199000,
+        'COP',
+        'ref-001',
+        'user@test.com',
+      );
+
+      expect(client.tokenizeCard).toHaveBeenCalledWith(
+        expect.objectContaining({ expYear: '30' }),
+      );
+    });
+
     it('passes card token and acceptance token to createTransaction', async () => {
       const client = makeClient();
       const gateway = new PspPaymentGateway(client, INTEGRITY_KEY);
@@ -133,7 +149,28 @@ describe('PspPaymentGateway', () => {
       expect(result.status).toBe(PaymentResultStatus.ERROR);
     });
 
-    it('returns ERROR when PSP client throws', async () => {
+    it('returns ERROR (without pspTransactionId) when tokenization fails', async () => {
+      const client = makeClient({
+        tokenizeCard: jest
+          .fn()
+          .mockRejectedValue(new Error('Request failed with status code 422')),
+      });
+      const gateway = new PspPaymentGateway(client, INTEGRITY_KEY);
+
+      const result = await gateway.charge(
+        makeCardData(),
+        199000,
+        'COP',
+        'ref-001',
+        'user@test.com',
+      );
+
+      expect(result.status).toBe(PaymentResultStatus.ERROR);
+      expect(result.pspTransactionId).toBeUndefined();
+      expect(result.message).toContain('422');
+    });
+
+    it('returns ERROR when the PSP is unreachable', async () => {
       const client = makeClient({
         getMerchantAcceptanceToken: jest
           .fn()
@@ -141,15 +178,36 @@ describe('PspPaymentGateway', () => {
       });
       const gateway = new PspPaymentGateway(client, INTEGRITY_KEY);
 
-      await expect(
-        gateway.charge(
-          makeCardData(),
-          199000,
-          'COP',
-          'ref-001',
-          'user@test.com',
-        ),
-      ).rejects.toThrow('Network error');
+      const result = await gateway.charge(
+        makeCardData(),
+        199000,
+        'COP',
+        'ref-001',
+        'user@test.com',
+      );
+
+      expect(result.status).toBe(PaymentResultStatus.ERROR);
+      expect(result.message).toBe('Network error');
+    });
+
+    it('returns ERROR with pspTransactionId when polling fails after creation', async () => {
+      const client = makeClient({
+        getTransactionStatus: jest
+          .fn()
+          .mockRejectedValue(new Error('Network error')),
+      });
+      const gateway = new PspPaymentGateway(client, INTEGRITY_KEY);
+
+      const result = await gateway.charge(
+        makeCardData(),
+        199000,
+        'COP',
+        'ref-001',
+        'user@test.com',
+      );
+
+      expect(result.status).toBe(PaymentResultStatus.ERROR);
+      expect(result.pspTransactionId).toBe('psp-txn-001');
     });
   });
 
