@@ -92,6 +92,11 @@ jobs:
             set -e
             cd /opt/payflow-store
 
+            curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/backend/deploy/docker-compose.prod.yml -o docker-compose.yml
+            curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/backend/deploy/payflow.conf -o deploy/payflow.conf
+            docker exec sara_nginx nginx -t
+            docker exec sara_nginx nginx -s reload
+
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             docker compose pull payflow_api

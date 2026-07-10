@@ -1,0 +1,45 @@
+services:
+  payflow_api:
+    image: ghcr.io/lamda94/payflow-store-api:latest
+    container_name: payflow_api
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    restart: unless-stopped
+    depends_on:
+      payflow_postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - sara_sara_net
+
+  payflow_postgres:
+    image: postgres:16-alpine
+    container_name: payflow_postgres
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - payflow_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sara_sara_net
+
+networks:
+  sara_sara_net:
+    external: true
+
+volumes:
+  payflow_postgres_data:
