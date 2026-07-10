@@ -2,6 +2,7 @@ import {
   ArgumentsHost,
   Catch,
   ExceptionFilter,
+  HttpException,
   HttpStatus,
   Logger,
 } from '@nestjs/common';
@@ -18,6 +19,12 @@ interface ErrorBody {
   code: string;
   message: string;
 }
+
+const HTTP_ERROR_CODES: Partial<Record<number, string>> = {
+  [HttpStatus.BAD_REQUEST]: 'VALIDATION_ERROR',
+  [HttpStatus.NOT_FOUND]: 'NOT_FOUND',
+  [HttpStatus.TOO_MANY_REQUESTS]: 'TOO_MANY_REQUESTS',
+};
 
 @Catch()
 export class DomainExceptionFilter implements ExceptionFilter {
@@ -40,6 +47,22 @@ export class DomainExceptionFilter implements ExceptionFilter {
   }
 
   private resolve(exception: unknown): { status: HttpStatus; body: ErrorBody } {
+    if (exception instanceof HttpException) {
+      const status = exception.getStatus();
+      const raw = exception.getResponse();
+      const message =
+        typeof raw === 'string'
+          ? raw
+          : ((raw as { message?: string | string[] }).message ??
+            exception.message);
+      return {
+        status,
+        body: {
+          code: HTTP_ERROR_CODES[status] ?? 'HTTP_ERROR',
+          message: Array.isArray(message) ? message.join('; ') : message,
+        },
+      };
+    }
     if (exception instanceof ProductNotFoundError) {
       return {
         status: HttpStatus.NOT_FOUND,

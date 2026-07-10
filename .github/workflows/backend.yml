@@ -42,3 +42,47 @@ jobs:
           name: backend-coverage
           path: backend/coverage/
           retention-days: 14
+
+  e2e:
+    name: E2E (full flow, mocked PSP)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: payflow_e2e
+          POSTGRES_USER: payflow
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U payflow -d payflow_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: '5432'
+      DB_NAME: payflow_e2e
+      DB_USER: payflow
+      DB_PASSWORD: ''
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Run e2e tests
+        working-directory: backend
+        run: npm run test:e2e

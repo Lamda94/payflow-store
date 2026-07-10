@@ -1,4 +1,5 @@
-import { HttpStatus } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
+import { ThrottlerException } from '@nestjs/throttler';
 import {
   InsufficientStockError,
   ProductNotFoundError,
@@ -24,6 +25,38 @@ describe('DomainExceptionFilter', () => {
     filter = new DomainExceptionFilter();
     json = jest.fn();
     status = jest.fn().mockReturnValue({ json });
+  });
+
+  it('preserves ValidationPipe 400 with joined messages → VALIDATION_ERROR', () => {
+    filter.catch(
+      new BadRequestException(['productId must be a UUID', 'quantity min 1']),
+      makeHost({ status, json }),
+    );
+    expect(status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    expect(json).toHaveBeenCalledWith({
+      code: 'VALIDATION_ERROR',
+      message: 'productId must be a UUID; quantity min 1',
+    });
+  });
+
+  it('maps ThrottlerException → 429 TOO_MANY_REQUESTS', () => {
+    filter.catch(new ThrottlerException(), makeHost({ status, json }));
+    expect(status).toHaveBeenCalledWith(HttpStatus.TOO_MANY_REQUESTS);
+    expect(json).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'TOO_MANY_REQUESTS' }),
+    );
+  });
+
+  it('maps an HttpException with string response and unmapped status → HTTP_ERROR', () => {
+    filter.catch(
+      new HttpException('teapot', HttpStatus.I_AM_A_TEAPOT),
+      makeHost({ status, json }),
+    );
+    expect(status).toHaveBeenCalledWith(HttpStatus.I_AM_A_TEAPOT);
+    expect(json).toHaveBeenCalledWith({
+      code: 'HTTP_ERROR',
+      message: 'teapot',
+    });
   });
 
   it('maps ProductNotFoundError → 404 PRODUCT_NOT_FOUND', () => {
