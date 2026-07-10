@@ -85,3 +85,5 @@ export const selectCheckoutStep = (state: RootState): CheckoutStep =>
   state.checkout.step;
 export const selectCardDraft = (state: RootState): CardDraft =>
   state.checkout.card;
+export const selectCustomerEmail = (state: RootState): string =>
+  state.checkout.customerEmail;

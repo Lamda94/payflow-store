@@ -2,6 +2,7 @@ import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { HomeScreen } from '../HomeScreen';
 import { createTestStore, storeWrapper } from '../../../test-utils/testStore';
+import { selectProduct } from '../../../store/slices/cartSlice';
 import type { Product } from '../../../domain/types';
 
 const products: Product[] = [
@@ -93,5 +94,39 @@ describe('HomeScreen', () => {
     fireEvent.press(getByTestId('product-card-p1'));
 
     expect(navigation.navigate).toHaveBeenCalledWith('ProductDetail', { productId: 'p1' });
+  });
+
+  it('hides the cart FAB when the cart is empty', async () => {
+    const store = createTestStore({ listProducts: () => Promise.resolve(products) });
+    const { getByTestId, queryByTestId } = await render(
+      <HomeScreen navigation={makeNavigation()} route={{ key: 'Home', name: 'Home' } as never} />,
+      { wrapper: storeWrapper(store) },
+    );
+
+    await waitFor(() => {
+      expect(getByTestId('home-product-list')).toBeTruthy();
+      expect(queryByTestId('cart-fab')).toBeNull();
+    });
+  });
+
+  it('shows the cart FAB with the quantity and navigates to Checkout when pressed', async () => {
+    const store = createTestStore({ listProducts: () => Promise.resolve(products) });
+    const navigation = makeNavigation();
+
+    const { getByTestId, getByText } = await render(
+      <HomeScreen navigation={navigation} route={{ key: 'Home', name: 'Home' } as never} />,
+      { wrapper: storeWrapper(store) },
+    );
+
+    store.dispatch(selectProduct({ productId: 'p1', quantity: 2 }));
+
+    await waitFor(() => {
+      expect(getByTestId('cart-fab')).toBeTruthy();
+    });
+    expect(getByText('Cart (2)')).toBeTruthy();
+
+    fireEvent.press(getByTestId('cart-fab'));
+
+    expect(navigation.navigate).toHaveBeenCalledWith('Checkout');
   });
 });
