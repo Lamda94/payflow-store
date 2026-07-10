@@ -10,6 +10,7 @@ module.exports = {
     '!**/*.d.ts',
     // type-only modules and thin re-exports — no runtime logic to cover
     '!src/domain/types.ts',
+    '!src/domain/card/types.ts',
     '!src/store/hooks.ts',
   ],
   coverageThreshold: {
