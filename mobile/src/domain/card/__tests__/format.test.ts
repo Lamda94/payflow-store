@@ -1,4 +1,4 @@
-import { formatCardNumber, formatExpiration } from '../format';
+import { expandTwoDigitYear, formatCardNumber, formatExpiration } from '../format';
 
 describe('formatCardNumber', () => {
   it('groups digits in blocks of 4', () => {
@@ -53,5 +53,12 @@ describe('formatExpiration', () => {
 
   it('returns an empty string for empty input', () => {
     expect(formatExpiration('')).toBe('');
+  });
+});
+
+describe('expandTwoDigitYear', () => {
+  it('prefixes with 20', () => {
+    expect(expandTwoDigitYear('30')).toBe('2030');
+    expect(expandTwoDigitYear('99')).toBe('2099');
   });
 });

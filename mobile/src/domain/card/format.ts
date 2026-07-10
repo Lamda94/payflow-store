@@ -18,3 +18,14 @@ export function formatExpiration(value: string): string {
   }
   return `${digits.slice(0, 2)}/${digits.slice(2)}`;
 }
+
+/**
+ * The MM/YY input the user types (matching how physical cards are
+ * printed) uses a 2-digit year, but the backend contract — and the PSP
+ * tokenization endpoint's counterpart conversion on the backend side —
+ * models expirationYear as 4 digits. Assumes the 21st century, which
+ * covers every card that could realistically be entered here.
+ */
+export function expandTwoDigitYear(twoDigitYear: string): string {
+  return `20${twoDigitYear}`;
+}

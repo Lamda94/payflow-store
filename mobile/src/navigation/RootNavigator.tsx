@@ -2,8 +2,9 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SplashScreen } from '../ui/screens/SplashScreen';
-import { HomeScreen, HomeHeaderRight } from '../ui/screens/HomeScreen';
+import { HomeScreen } from '../ui/screens/HomeScreen';
 import { ProductDetailScreen } from '../ui/screens/ProductDetailScreen';
+import { CheckoutScreen } from '../ui/screens/CheckoutScreen';
 import { colors } from '../ui/theme';
 import type { RootStackParamList } from './types';
 
@@ -21,16 +22,13 @@ export function RootNavigator() {
         }}
       >
         <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }} />
-        <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{ title: 'PayFlow Store', headerRight: HomeHeaderRight }}
-        />
+        <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'PayFlow Store' }} />
         <Stack.Screen
           name="ProductDetail"
           component={ProductDetailScreen}
           options={{ title: 'Product' }}
         />
+        <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ title: 'Checkout' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

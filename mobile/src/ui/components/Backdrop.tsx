@@ -1,0 +1,71 @@
+import React from 'react';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { colors, spacing } from '../theme';
+
+interface Props {
+  visible: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}
+
+/**
+ * Material "Backdrop": the back layer (whatever screen is behind) stays
+ * dimmed and visible; the front layer is a rounded sheet that slides up
+ * from the bottom holding the active step's content (card form, then
+ * summary). Dismissible by tapping the scrim or the Android back button.
+ */
+export function Backdrop({ visible, onClose, children }: Props) {
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      testID="backdrop-modal"
+    >
+      <View style={styles.overlay}>
+        <Pressable
+          style={styles.scrim}
+          onPress={onClose}
+          accessibilityLabel="Close"
+          testID="backdrop-scrim"
+        />
+        <View style={styles.sheet} testID="backdrop-sheet">
+          <View style={styles.handle} />
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+            {children}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  scrim: {
+    ...StyleSheet.absoluteFill,
+  },
+  sheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '88%',
+  },
+  handle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.border,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  content: {
+    padding: spacing.lg,
+  },
+});
