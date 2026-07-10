@@ -12,7 +12,7 @@ import {
 } from '../../domain/ports/payment-gateway.port';
 import { ProductRepository } from '../../domain/ports/product.repository.port';
 import { TransactionRepository } from '../../domain/ports/transaction.repository.port';
-import { DeliveryRepository } from '../../domain/ports/delivery.repository.port';
+import { PaymentUnitOfWork } from '../../domain/ports/payment-unit-of-work.port';
 import { IdGenerator } from '../../domain/ports/id-generator.port';
 
 export interface ProcessPaymentInput {
@@ -30,7 +30,7 @@ export class ProcessPaymentUseCase {
   constructor(
     private readonly transactionRepository: TransactionRepository,
     private readonly productRepository: ProductRepository,
-    private readonly deliveryRepository: DeliveryRepository,
+    private readonly paymentUnitOfWork: PaymentUnitOfWork,
     private readonly paymentGateway: PaymentGateway,
     private readonly idGenerator: IdGenerator,
   ) {}
@@ -77,9 +77,7 @@ export class ProcessPaymentUseCase {
         createdAt: now,
       });
 
-      await this.transactionRepository.save(transaction);
-      await this.productRepository.save(product);
-      await this.deliveryRepository.save(delivery);
+      await this.paymentUnitOfWork.saveApprovedPayment(transaction, delivery);
     } else if (result.status === PaymentResultStatus.DECLINED) {
       transaction.decline(result.pspTransactionId, now);
       await this.transactionRepository.save(transaction);

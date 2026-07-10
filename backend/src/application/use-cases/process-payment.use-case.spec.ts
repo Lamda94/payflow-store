@@ -6,7 +6,7 @@ import {
 import { Product } from '../../domain/entities/product.entity';
 import { TransactionRepository } from '../../domain/ports/transaction.repository.port';
 import { ProductRepository } from '../../domain/ports/product.repository.port';
-import { DeliveryRepository } from '../../domain/ports/delivery.repository.port';
+import { PaymentUnitOfWork } from '../../domain/ports/payment-unit-of-work.port';
 import {
   PaymentGateway,
   PaymentResultStatus,
@@ -50,8 +50,8 @@ const makeProductRepo = (product: Product | null): ProductRepository => ({
   save: jest.fn().mockResolvedValue(undefined),
 });
 
-const makeDeliveryRepo = (): DeliveryRepository => ({
-  save: jest.fn().mockResolvedValue(undefined),
+const makeUnitOfWork = (): PaymentUnitOfWork => ({
+  saveApprovedPayment: jest.fn().mockResolvedValue(undefined),
 });
 
 const makeGateway = (status: PaymentResultStatus): PaymentGateway => ({
@@ -76,12 +76,12 @@ describe('ProcessPaymentUseCase', () => {
     it('approves transaction, creates delivery and decreases stock', async () => {
       const txnRepo = makeTransactionRepo(makePendingTxn());
       const productRepo = makeProductRepo(makeProduct(10));
-      const deliveryRepo = makeDeliveryRepo();
+      const unitOfWork = makeUnitOfWork();
 
       const useCase = new ProcessPaymentUseCase(
         txnRepo,
         productRepo,
-        deliveryRepo,
+        unitOfWork,
         makeGateway(PaymentResultStatus.APPROVED),
         makeIdGenerator(),
       );
@@ -93,9 +93,9 @@ describe('ProcessPaymentUseCase', () => {
 
       expect(result.status).toBe(TransactionStatus.APPROVED);
       expect(result.pspTransactionId).toBe('psp-123');
-      expect(txnRepo.save).toHaveBeenCalledTimes(1);
-      expect(productRepo.save).toHaveBeenCalledTimes(1);
-      expect(deliveryRepo.save).toHaveBeenCalledTimes(1);
+      expect(unitOfWork.saveApprovedPayment).toHaveBeenCalledTimes(1);
+      expect(txnRepo.save).not.toHaveBeenCalled();
+      expect(productRepo.save).not.toHaveBeenCalled();
     });
   });
 
@@ -103,12 +103,12 @@ describe('ProcessPaymentUseCase', () => {
     it('declines transaction and does not touch stock or delivery', async () => {
       const txnRepo = makeTransactionRepo(makePendingTxn());
       const productRepo = makeProductRepo(makeProduct(10));
-      const deliveryRepo = makeDeliveryRepo();
+      const unitOfWork = makeUnitOfWork();
 
       const useCase = new ProcessPaymentUseCase(
         txnRepo,
         productRepo,
-        deliveryRepo,
+        unitOfWork,
         makeGateway(PaymentResultStatus.DECLINED),
         makeIdGenerator(),
       );
@@ -119,8 +119,8 @@ describe('ProcessPaymentUseCase', () => {
       });
 
       expect(result.status).toBe(TransactionStatus.DECLINED);
-      expect(productRepo.save).not.toHaveBeenCalled();
-      expect(deliveryRepo.save).not.toHaveBeenCalled();
+      expect(txnRepo.save).toHaveBeenCalledTimes(1);
+      expect(unitOfWork.saveApprovedPayment).not.toHaveBeenCalled();
     });
   });
 
@@ -128,12 +128,12 @@ describe('ProcessPaymentUseCase', () => {
     it('marks transaction as error and does not touch stock or delivery', async () => {
       const txnRepo = makeTransactionRepo(makePendingTxn());
       const productRepo = makeProductRepo(makeProduct(10));
-      const deliveryRepo = makeDeliveryRepo();
+      const unitOfWork = makeUnitOfWork();
 
       const useCase = new ProcessPaymentUseCase(
         txnRepo,
         productRepo,
-        deliveryRepo,
+        unitOfWork,
         makeGateway(PaymentResultStatus.ERROR),
         makeIdGenerator(),
       );
@@ -144,8 +144,8 @@ describe('ProcessPaymentUseCase', () => {
       });
 
       expect(result.status).toBe(TransactionStatus.ERROR);
-      expect(productRepo.save).not.toHaveBeenCalled();
-      expect(deliveryRepo.save).not.toHaveBeenCalled();
+      expect(txnRepo.save).toHaveBeenCalledTimes(1);
+      expect(unitOfWork.saveApprovedPayment).not.toHaveBeenCalled();
     });
   });
 
@@ -154,7 +154,7 @@ describe('ProcessPaymentUseCase', () => {
       const useCase = new ProcessPaymentUseCase(
         makeTransactionRepo(null),
         makeProductRepo(makeProduct()),
-        makeDeliveryRepo(),
+        makeUnitOfWork(),
         makeGateway(PaymentResultStatus.APPROVED),
         makeIdGenerator(),
       );
@@ -171,7 +171,7 @@ describe('ProcessPaymentUseCase', () => {
       const useCase = new ProcessPaymentUseCase(
         makeTransactionRepo(txn),
         makeProductRepo(makeProduct()),
-        makeDeliveryRepo(),
+        makeUnitOfWork(),
         makeGateway(PaymentResultStatus.APPROVED),
         makeIdGenerator(),
       );
@@ -185,7 +185,7 @@ describe('ProcessPaymentUseCase', () => {
       const useCase = new ProcessPaymentUseCase(
         makeTransactionRepo(makePendingTxn()),
         makeProductRepo(null),
-        makeDeliveryRepo(),
+        makeUnitOfWork(),
         makeGateway(PaymentResultStatus.APPROVED),
         makeIdGenerator(),
       );
@@ -203,7 +203,7 @@ describe('ProcessPaymentUseCase', () => {
       const useCase = new ProcessPaymentUseCase(
         makeTransactionRepo(txn),
         makeProductRepo(makeProduct()),
-        makeDeliveryRepo(),
+        makeUnitOfWork(),
         gateway,
         makeIdGenerator(),
       );

@@ -8,9 +8,9 @@ import {
   PaymentGateway,
 } from '../../domain/ports/payment-gateway.port';
 import {
-  DELIVERY_REPOSITORY,
-  DeliveryRepository,
-} from '../../domain/ports/delivery.repository.port';
+  PAYMENT_UNIT_OF_WORK,
+  PaymentUnitOfWork,
+} from '../../domain/ports/payment-unit-of-work.port';
 import {
   PRODUCT_REPOSITORY,
   ProductRepository,
@@ -60,21 +60,21 @@ import {
       useFactory: (
         txnRepo: TransactionRepository,
         productRepo: ProductRepository,
-        deliveryRepo: DeliveryRepository,
+        unitOfWork: PaymentUnitOfWork,
         gateway: PaymentGateway,
         idGen: IdGenerator,
       ) =>
         new ProcessPaymentUseCase(
           txnRepo,
           productRepo,
-          deliveryRepo,
+          unitOfWork,
           gateway,
           idGen,
         ),
       inject: [
         TRANSACTION_REPOSITORY,
         PRODUCT_REPOSITORY,
-        DELIVERY_REPOSITORY,
+        PAYMENT_UNIT_OF_WORK,
         PAYMENT_GATEWAY,
         ID_GENERATOR,
       ],
