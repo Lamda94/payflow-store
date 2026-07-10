@@ -165,27 +165,33 @@ Ver `backend/.env.example` para la lista completa.
 | Secreto | Uso |
 |---------|-----|
 | `VPS_HOST` | IP del VPS OVH |
-| `VPS_USER` | Usuario SSH de deploy |
+| `VPS_PORT` | Puerto SSH (2222) |
+| `VPS_USER` | Usuario SSH de deploy (`ubuntu`) |
 | `VPS_SSH_KEY` | Clave privada SSH (ED25519) |
 
 `GITHUB_TOKEN` se usa automáticamente para autenticarse en GHCR.
 
 ---
 
-## Setup inicial en el VPS
+## Infraestructura del VPS
 
-```bash
-# 1. Clonar el repo
-git clone https://github.com/Lamda94/payflow-store.git ~/payflow-store
-cd ~/payflow-store
+- **OS**: Ubuntu 25.04 en OVH Cloud
+- **Reverse proxy**: nginx corriendo como contenedor `sara_nginx` (compartido entre proyectos)
+- **TLS**: Certificado autofirmado + Cloudflare modo Full (Cloudflare termina TLS hacia el cliente)
+- **DNS**: `payflow.luismendezdev.online` → proxied en Cloudflare → IP del VPS
+- **Red Docker**: `sara_sara_net` — red compartida entre todos los proyectos del VPS
+- **Compose del proyecto**: `/opt/payflow-store/docker-compose.yml`
+- **Nginx config**: `/opt/payflow-store/deploy/payflow.conf` (montado en sara_nginx)
 
-# 2. Variables de entorno de produccion
-cp backend/.env.example .env
-nano .env   # completar con valores reales
+### Setup inicial (ya ejecutado)
 
-# 3. Certificado de origen Cloudflare (Full Strict TLS)
-mkdir -p certs
-# copiar origin.pem y origin.key (generados en el dashboard de Cloudflare)
+El directorio `/opt/payflow-store/` ya está creado en el VPS con:
+- `docker-compose.yml` — payflow_api + payflow_postgres (en `sara_sara_net`)
+- `deploy/payflow.conf` — nginx config montada en `sara_nginx`
+- `deploy/certs/` — certificado autofirmado para `payflow.luismendezdev.online`
+- `.env` — variables de entorno (completar PSP keys)
+
+A partir del primer setup, los deploys son automaticos via GitHub Actions al hacer push a `main`.
 
 # 4. Editar Caddyfile: reemplazar TU_DOMINIO por el dominio real
 
@@ -195,8 +201,6 @@ docker compose -f docker-compose.prod.yml run --rm api npm run migration:run
 ```
 
 A partir del primer setup, los deploys son automaticos via GitHub Actions al hacer push a `main`.
-
----
 
 ## Mobile
 
