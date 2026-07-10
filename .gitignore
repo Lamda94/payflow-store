@@ -21,3 +21,6 @@ coverage/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# AI assistant session files — internal working context, never committed
+.claude/

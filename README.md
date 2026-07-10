@@ -35,6 +35,8 @@ Reforzado en tiempo de lint con `eslint-plugin-import/no-restricted-paths`.
 
 ## Endpoints
 
+Documentación interactiva (Swagger UI): **[`/docs`](https://payflow.luismendezdev.online/docs)** — spec OpenAPI en `/docs-json`.
+
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | `GET` | `/health` | Healthcheck |
