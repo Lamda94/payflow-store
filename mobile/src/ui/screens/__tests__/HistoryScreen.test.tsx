@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { HistoryScreen } from '../HistoryScreen';
 import { createTestStore, storeWrapper } from '../../../test-utils/testStore';
 import type { TransactionRecord } from '../../../domain/types';
@@ -54,6 +54,45 @@ describe('HistoryScreen', () => {
     expect(getByText('COP 578,000.00')).toBeTruthy();
     expect(getByText('APPROVED')).toBeTruthy();
     expect(getByText('DECLINED')).toBeTruthy();
+  });
+
+  it('expands an item on tap to reveal the purchase detail and collapses on a second tap', async () => {
+    const store = createTestStore();
+    archive(store, {
+      id: 'tx1',
+      reference: 'ref-1',
+      status: 'APPROVED',
+      amountInCents: 57800000,
+      currency: 'COP',
+      createdAt: '2026-07-11T10:00:00.000Z',
+      productName: 'Mechanical Keyboard TKL',
+      quantity: 2,
+    });
+
+    const { getByTestId, queryByTestId, getByText } = await render(<HistoryScreen />, {
+      wrapper: storeWrapper(store),
+    });
+
+    expect(queryByTestId('history-item-detail')).toBeNull();
+
+    await act(async () => {
+      fireEvent.press(getByTestId('history-item'));
+    });
+
+    await waitFor(() => {
+      expect(getByTestId('history-item-detail')).toBeTruthy();
+    });
+    expect(getByText('ref-1')).toBeTruthy();
+    expect(getByText('tx1')).toBeTruthy();
+    expect(getByText('Quantity')).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(getByTestId('history-item'));
+    });
+
+    await waitFor(() => {
+      expect(queryByTestId('history-item-detail')).toBeNull();
+    });
   });
 
   it('falls back to the reference for records without product metadata', async () => {
