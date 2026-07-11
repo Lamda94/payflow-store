@@ -214,4 +214,13 @@ corre las migraciones (`migration:run:prod`) y levanta la nueva imagen.
 
 ## Mobile
 
-_Modulo React Native + Redux — en desarrollo._
+React Native (bare CLI) + Redux Toolkit + redux-persist encriptado. Documentación completa en [`mobile/README.md`](mobile/README.md).
+
+**Flujo**: Splash → Home (catálogo) → Detalle del producto → Checkout con backdrop → Card Info → Payment Summary → Resultado.
+
+| Workflow | Trigger | Pasos |
+|----------|---------|-------|
+| `mobile.yml` | PR/push en `mobile/**` | lint → test:cov (umbral ≥ 80%) · assembleDebug |
+| `mobile.yml` | push a `main` | + assembleRelease firmado (requiere secrets de keystore) |
+
+El APK release firmado se genera en CI y queda como artifact en el run de `main`.

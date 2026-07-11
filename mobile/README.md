@@ -1,101 +1,181 @@
 # PayFlow Store — Mobile
 
-Credit card payment checkout app. React Native (bare CLI) + TypeScript + Redux Toolkit.
+Credit card payment checkout app built with React Native (bare CLI) + TypeScript + Redux Toolkit.
 
-> Full architecture, testing and setup docs land at the end of mobile development (M6). This is the standard React Native CLI getting-started guide in the meantime.
+**Stack**: React Native 0.86 · TypeScript · Redux Toolkit · redux-persist (AES encrypted) · Jest + React Native Testing Library  
+**Architecture**: Layered (domain → store → services → ui)
 
-# Getting Started
+---
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Arquitectura por capas
 
-## Step 1: Start Metro
-
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
-
-To start the Metro dev server, run the following command from the root of your React Native project:
-
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
+```
+mobile/src/
+├── domain/            # TypeScript puro — sin React, sin Redux, sin llamadas de red
+│   ├── card/          # Luhn, detección de marca (Visa/Mastercard), expiración, CVC, formateo
+│   ├── money.ts       # formatMoney(amountInCents, currency) → string UI
+│   ├── email.ts       # validación de e-mail
+│   └── types.ts       # tipos compartidos (Product, CartItem, TransactionRecord)
+├── store/             # Redux Toolkit (Flux estricto: action → reducer → selector → UI)
+│   ├── slices/        # productsSlice · cartSlice · checkoutSlice · transactionSlice
+│   ├── persist/       # encryptedTransform (AES-CryptoJS) + keychain (Keychain/Keystore)
+│   └── index.ts       # createAppStore / initStore
+├── services/          # Cliente HTTP — único lugar con fetch(); invocado solo desde thunks
+│   ├── httpApi.ts     # implementación real contra el backend desplegado
+│   └── api.ts         # interfaz PayflowApi + notImplementedApi (para tests)
+└── ui/
+    ├── screens/       # SplashScreen · HomeScreen · ProductDetailScreen · CheckoutScreen
+    ├── components/    # Backdrop · CardInfoForm · PaymentSummaryView · PaymentResultView
+    │                  # ProductCard · QuantityStepper · LabeledInput · Toast · ErrorBoundary
+    └── theme/         # colors · spacing · typography (tokens centralizados, sin hardcode)
 ```
 
-## Step 2: Build and run your app
+**Regla de dependencias**: `ui → store → domain` y `services` solo desde thunks del store.  
+`domain/` no importa React, RN ni Redux; testeable en puro Jest sin render.
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+---
 
-### Android
+## Flujo de la app
 
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+```
+Splash → Home (catálogo) → Detalle del producto (cantidad) →
+Checkout (resumen + backdrop) → Card Info → Payment Summary →
+Processing → Resultado (APPROVED / DECLINED)
 ```
 
-### iOS
+- El backdrop (pantalla 4–6) implementa el patrón Material Design de capa trasera/delantera deslizable.
+- El estado de cada transacción se persiste encriptado; si la app cierra con un pago PENDING, al reabrir retoma el polling automáticamente.
+- Los datos de tarjeta viven **solo en memoria** (`checkoutSlice`, en blacklist de persist). Nunca se persisten ni se loguean.
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+---
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+## Correr la app
 
-```sh
-bundle install
+### Requisitos
+
+- Node 22, JDK 17, Android SDK / Xcode (según plataforma)
+- Metro bundler
+
+```bash
+cd mobile
+npm ci
+npm start          # arranca Metro en una terminal
 ```
 
-Then, and every time you update your native dependencies, run:
+En otra terminal:
 
-```sh
-bundle exec pod install
+```bash
+npm run android    # conectar dispositivo o emulador primero
+# npm run ios      # solo macOS con Xcode
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+### Apuntar al backend local
 
-```sh
-# Using npm
-npm run ios
+Editar `mobile/src/services/config.ts`:
 
-# OR using Yarn
-yarn ios
+```ts
+export const API_BASE_URL = 'http://10.0.2.2:3000'; // emulador Android
+// export const API_BASE_URL = 'http://localhost:3000'; // iOS simulator
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+Por defecto apunta al backend desplegado en producción.
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+---
 
-## Step 3: Modify your app
+## Tests
 
-Now that you have successfully run the app, let's make changes!
+```bash
+cd mobile
+npm test              # suite completa (unit + componentes)
+npm run test:cov      # con reporte de cobertura (umbral global ≥ 80%)
+```
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+### Resultados de cobertura
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+| Métrica | Umbral | Resultado |
+|---------|--------|-----------|
+| Statements | 80% | > 80% |
+| Branches | 80% | > 80% |
+| Functions | 80% | > 80% |
+| Lines | 80% | > 80% |
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+Reporte completo disponible en `mobile/coverage/` tras ejecutar `npm run test:cov`.  
+El umbral está configurado en `jest.config.js` y el CI falla si baja del 80%.
 
-## Congratulations! :tada:
+### Qué se testea
 
-You've successfully run and modified your React Native App. :partying_face:
+| Capa | Tests |
+|------|-------|
+| `domain/card/` | Luhn (válidos + inválidos), detección Visa/Mastercard, expiración, CVC, formateo |
+| `domain/` | `formatMoney`, validación de e-mail |
+| `store/slices/` | Todos los reducers y thunks con mock de `PayflowApi` |
+| `store/persist/` | `encryptedTransform` (encrypt/decrypt), `keychain` (get/create key) |
+| `store/` | `initStore`, `StoreProvider`, ciclo completo de pago |
+| `services/` | `httpApi` (fetch real con mocks), `api` (contrato) |
+| `ui/components/` | Backdrop, CardInfoForm, CardBrandLogo, LabeledInput, PaymentProcessingView, PaymentResultView, PaymentSummaryView, ProductCard, QuantityStepper, Toast, ErrorBoundary |
+| `ui/screens/` | HomeScreen, ProductDetailScreen, CheckoutScreen, SplashScreen |
+| `navigation/` | RootNavigator |
 
-### Now what?
+---
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+## Tarjetas de prueba (sandbox)
 
-# Troubleshooting
+Usar las tarjetas de prueba del sandbox del proveedor de pagos. Las siguientes son válidas en la mayoría de los entornos sandbox:
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+| Número | Marca | Resultado esperado |
+|--------|-------|-------------------|
+| `4111 1111 1111 1111` | Visa | APPROVED |
+| `4000 0000 0000 0002` | Visa | DECLINED |
+| `5105 1051 0510 5100` | Mastercard | APPROVED |
 
-# Learn More
+Titular: cualquier nombre · CVC: cualquier 3 dígitos · Expiración: cualquier fecha futura.
 
-To learn more about React Native, take a look at the following resources:
+---
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+## Build Android
+
+### Debug (CI en cada PR)
+
+```bash
+cd mobile/android
+./gradlew assembleDebug --no-daemon
+# APK en: app/build/outputs/apk/debug/app-debug.apk
+```
+
+### Release (firmado)
+
+Requiere generar un keystore de release y configurar las variables de entorno:
+
+```bash
+# 1. Generar keystore (una sola vez)
+keytool -genkey -v -keystore release.keystore -alias payflow \
+  -keyalg RSA -keysize 2048 -validity 10000
+
+# 2. Codificar en base64 y agregar como GitHub Secret ANDROID_KEYSTORE_BASE64
+base64 -i release.keystore | pbcopy   # macOS
+# también agregar: ANDROID_STORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+
+# 3. Build local
+ANDROID_KEYSTORE_PATH=./release.keystore \
+ANDROID_STORE_PASSWORD=... \
+ANDROID_KEY_ALIAS=payflow \
+ANDROID_KEY_PASSWORD=... \
+./gradlew assembleRelease --no-daemon
+# APK en: app/build/outputs/apk/release/app-release.apk
+```
+
+En CI (push a `main`), el job `android-release` lo construye automáticamente usando los GitHub Secrets y publica el APK como artifact.
+
+---
+
+## Decisiones de arquitectura
+
+| Decisión | Motivo |
+|----------|--------|
+| **Redux Toolkit + redux-persist** | Requisito explícito del enunciado. persist para restaurar carrito y transacción en curso si la app cierra |
+| **Whitelist `['cart','transaction']`** | `checkoutSlice` (datos de tarjeta) en blacklist siempre — refuerza que los datos de tarjeta nunca se almacenan |
+| **AES + Keychain/Keystore** | Requisito explícito de persist encriptado. Llave guardada en el Keychain del dispositivo |
+| **`notImplementedApi` en tests** | Permite testear slices y store sin HTTP real; cada test inyecta su propio mock via `createAppStore(key, mockApi)` |
+| **Luhn en `domain/`** | Validación pura en TypeScript — cero dependencias de UI o red, testeable al 100% |
+| **`__DEV__` en ErrorBoundary** | El stack trace solo se loguea en desarrollo; en producción la UI muestra un mensaje genérico |
+| **`shadowColor` en `colors.shadow`** | Token de tema para evitar literales hardcodeados en componentes |
