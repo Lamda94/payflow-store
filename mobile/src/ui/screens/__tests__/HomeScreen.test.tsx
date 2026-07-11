@@ -131,4 +131,50 @@ describe('HomeScreen', () => {
 
     expect(navigation.navigate).toHaveBeenCalledWith('Checkout');
   });
+
+  it('hides the history FAB when there are no archived purchases', async () => {
+    const store = createTestStore({ listProducts: () => Promise.resolve(products) });
+    const { getByTestId, queryByTestId } = await render(
+      <HomeScreen navigation={makeNavigation()} route={{ key: 'Home', name: 'Home' } as never} />,
+      { wrapper: storeWrapper(store) },
+    );
+
+    await waitFor(() => {
+      expect(getByTestId('home-product-list')).toBeTruthy();
+      expect(queryByTestId('history-fab')).toBeNull();
+    });
+  });
+
+  it('shows the history FAB and navigates to History when pressed', async () => {
+    const store = createTestStore({ listProducts: () => Promise.resolve(products) });
+    const navigation = makeNavigation();
+
+    const { getByTestId } = await render(
+      <HomeScreen navigation={navigation} route={{ key: 'Home', name: 'Home' } as never} />,
+      { wrapper: storeWrapper(store) },
+    );
+
+    await act(async () => {
+      store.dispatch({
+        type: 'transaction/pay/fulfilled',
+        payload: {
+          id: 'tx1',
+          reference: 'ref-1',
+          status: 'APPROVED',
+          amountInCents: 28900000,
+          currency: 'COP',
+          createdAt: '2026-07-11T10:00:00.000Z',
+        },
+      });
+      store.dispatch({ type: 'transaction/archiveCurrentTransaction' });
+    });
+
+    await waitFor(() => {
+      expect(getByTestId('history-fab')).toBeTruthy();
+    });
+
+    fireEvent.press(getByTestId('history-fab'));
+
+    expect(navigation.navigate).toHaveBeenCalledWith('History');
+  });
 });

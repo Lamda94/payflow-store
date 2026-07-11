@@ -5,6 +5,7 @@ import { SplashScreen } from '../ui/screens/SplashScreen';
 import { HomeScreen } from '../ui/screens/HomeScreen';
 import { ProductDetailScreen } from '../ui/screens/ProductDetailScreen';
 import { CheckoutScreen } from '../ui/screens/CheckoutScreen';
+import { HistoryScreen } from '../ui/screens/HistoryScreen';
 import { colors } from '../ui/theme';
 import type { RootStackParamList } from './types';
 
@@ -29,6 +30,11 @@ export function RootNavigator() {
           options={{ title: 'Product' }}
         />
         <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ title: 'Checkout' }} />
+        <Stack.Screen
+          name="History"
+          component={HistoryScreen}
+          options={{ title: 'Purchase history' }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

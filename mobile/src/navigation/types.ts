@@ -3,4 +3,5 @@ export type RootStackParamList = {
   Home: undefined;
   ProductDetail: { productId: string };
   Checkout: undefined;
+  History: undefined;
 };

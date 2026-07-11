@@ -10,6 +10,7 @@ import {
   selectProductsStatus,
 } from '../../store/slices/productsSlice';
 import { selectCart } from '../../store/slices/cartSlice';
+import { selectTransactionHistory } from '../../store/slices/transactionSlice';
 import { ProductCard } from '../components/ProductCard';
 import { colors, spacing, typography } from '../theme';
 
@@ -21,6 +22,7 @@ export function HomeScreen({ navigation }: Props) {
   const status = useAppSelector(selectProductsStatus);
   const error = useAppSelector(selectProductsError);
   const cart = useAppSelector(selectCart);
+  const history = useAppSelector(selectTransactionHistory);
 
   useEffect(() => {
     if (status === 'idle') {
@@ -86,6 +88,15 @@ export function HomeScreen({ navigation }: Props) {
           <Text style={styles.cartFabText}>Cart ({cart.quantity})</Text>
         </Pressable>
       )}
+      {history.length > 0 && (
+        <Pressable
+          testID="history-fab"
+          style={styles.historyFab}
+          onPress={() => navigation.navigate('History')}
+        >
+          <Text style={styles.historyFabText}>History</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -145,6 +156,27 @@ const styles = StyleSheet.create({
   cartFabText: {
     ...typography.body,
     color: colors.background,
+    fontWeight: '700',
+  },
+  historyFab: {
+    position: 'absolute',
+    left: spacing.md,
+    bottom: spacing.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 24,
+    elevation: 4,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  historyFabText: {
+    ...typography.body,
+    color: colors.textPrimary,
     fontWeight: '700',
   },
 });
