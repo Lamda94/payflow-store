@@ -5,6 +5,7 @@ import { selectCart } from '../../store/slices/cartSlice';
 import { goToResult, goToSummary, selectCardDraft, selectCustomerEmail } from '../../store/slices/checkoutSlice';
 import {
   createTransaction,
+  fetchTransactionStatus,
   payTransaction,
   selectCurrentTransaction,
 } from '../../store/slices/transactionSlice';
@@ -32,6 +33,17 @@ function getErrorMessage(error: unknown): string {
   return 'Something went wrong';
 }
 
+/** Backend error `code` — survives thunk serialization (see ApiError). */
+function getErrorCode(error: unknown): string | undefined {
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    const code = (error as { code?: unknown }).code;
+    if (typeof code === 'string') {
+      return code;
+    }
+  }
+  return undefined;
+}
+
 /**
  * Orchestrates the real payment call graph while checkout.step === 'processing':
  * POST /transactions (if there's no transaction yet) -> POST /transactions/:id/pay.
@@ -56,15 +68,15 @@ export function PaymentProcessingView({ onError }: Props) {
     let cancelled = false;
 
     async function run() {
+      // Only a PENDING transaction can be (re)paid — reusing one lets a
+      // retry after a failed pay skip re-creating it. A *finalized* one
+      // (APPROVED/DECLINED/ERROR) can linger in persisted state when the
+      // app dies before the result screen archives it, and the backend
+      // rejects paying it again ("Transaction already processed"), so a
+      // new purchase must start from a fresh transaction.
+      let transactionId =
+        currentTransaction?.status === 'PENDING' ? currentTransaction.id : undefined;
       try {
-        // Only a PENDING transaction can be (re)paid — reusing one lets a
-        // retry after a failed pay skip re-creating it. A *finalized* one
-        // (APPROVED/DECLINED/ERROR) can linger in persisted state when the
-        // app dies before the result screen archives it, and the backend
-        // rejects paying it again ("Transaction already processed"), so a
-        // new purchase must start from a fresh transaction.
-        let transactionId =
-          currentTransaction?.status === 'PENDING' ? currentTransaction.id : undefined;
         if (!transactionId) {
           const created = await dispatch(
             createTransaction({
@@ -82,6 +94,29 @@ export function PaymentProcessingView({ onError }: Props) {
           dispatch(goToResult());
         }
       } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        // TRANSACTION_ALREADY_PROCESSED means an earlier pay attempt DID
+        // finalize this transaction but its response never reached us (e.g.
+        // the request timed out client-side). The backend already has the
+        // real outcome — fetch it and show the result instead of an error,
+        // which would otherwise loop the user on the Pay button forever.
+        if (
+          getErrorCode(error) === 'TRANSACTION_ALREADY_PROCESSED' &&
+          transactionId !== undefined
+        ) {
+          try {
+            await dispatch(fetchTransactionStatus(transactionId)).unwrap();
+            if (!cancelled) {
+              dispatch(goToResult());
+            }
+            return;
+          } catch {
+            // Couldn't recover the real status — fall through to the
+            // generic error path so the user can retry from the summary.
+          }
+        }
         if (!cancelled) {
           onError(getErrorMessage(error));
           dispatch(goToSummary());

@@ -135,15 +135,21 @@ El umbral está configurado en `jest.config.js` y el CI falla si baja del 80%.
 
 ## Tarjetas de prueba (sandbox)
 
-Usar las tarjetas de prueba del sandbox del proveedor de pagos. Las siguientes son válidas en la mayoría de los entornos sandbox:
+Resultados verificados contra el sandbox del proveedor de pagos (vía el backend desplegado):
 
-| Número | Marca | Resultado esperado |
-|--------|-------|-------------------|
-| `4111 1111 1111 1111` | Visa | APPROVED |
-| `4000 0000 0000 0002` | Visa | DECLINED |
-| `5105 1051 0510 5100` | Mastercard | APPROVED |
+| Número | Marca | Resultado |
+|--------|-------|-----------|
+| `4242 4242 4242 4242` | Visa | APPROVED |
+| `4111 1111 1111 1111` | Visa | DECLINED |
+| `5555 5555 5555 4444` | Mastercard | ERROR (el sandbox solo procesa los números Visa de prueba) |
 
 Titular: cualquier nombre · CVC: cualquier 3 dígitos · Expiración: cualquier fecha futura.
+
+> El pago (`POST /transactions/:id/pay`) hace polling síncrono al PSP y tarda
+> **7–20 s** en sandbox — la app usa un timeout extendido (`PAY_REQUEST_TIMEOUT_MS`)
+> solo para esa llamada. Si una respuesta se pierde igualmente, el siguiente
+> intento recibe `409 TRANSACTION_ALREADY_PROCESSED` y la app recupera el
+> resultado real con `GET /transactions/:id` en lugar de mostrar un error.
 
 ---
 
@@ -194,3 +200,5 @@ En CI (push a `main`), el job `android-release` lo construye automáticamente us
 | **Luhn en `domain/`** | Validación pura en TypeScript — cero dependencias de UI o red, testeable al 100% |
 | **`__DEV__` en ErrorBoundary** | El stack trace solo se loguea en desarrollo; en producción la UI muestra un mensaje genérico |
 | **`shadowColor` en `colors.shadow`** | Token de tema para evitar literales hardcodeados en componentes |
+| **Timeout de pago de 65 s** | El `/pay` tarda 7–20 s (polling síncrono al PSP); debe superar el timeout del reverse proxy (60 s) para que el cliente nunca abandone antes que el servidor. Con 15 s la app abortaba mientras el backend finalizaba el pago igual |
+| **Recuperación de `TRANSACTION_ALREADY_PROCESSED`** | Si el resultado de un pago se pierde (timeout), la transacción quedó finalizada en el backend; ante el 409 la app consulta el estado real y muestra el resultado en vez de dejar al usuario en bucle sobre el botón Pay |

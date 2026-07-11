@@ -1,4 +1,4 @@
-import { httpApi } from '../httpApi';
+import { ApiError, httpApi } from '../httpApi';
 import { API_BASE_URL } from '../config';
 
 function jsonResponse(body: unknown, ok = true, status = 200) {
@@ -81,6 +81,31 @@ describe('httpApi', () => {
     );
 
     await expect(httpApi.listProducts()).rejects.toThrow('Insufficient stock: requested 9, available 5');
+  });
+
+  it('exposes the backend error code and HTTP status on the thrown error', async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue(
+      jsonResponse(
+        { code: 'TRANSACTION_ALREADY_PROCESSED', message: 'Transaction already processed: tx1' },
+        false,
+        409,
+      ),
+    );
+
+    const error = await httpApi
+      .payTransaction('tx1', {
+        cardNumber: '4242424242424242',
+        holderName: 'Test',
+        expirationMonth: '12',
+        expirationYear: '2030',
+        cvc: '123',
+        installments: 1,
+      })
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).code).toBe('TRANSACTION_ALREADY_PROCESSED');
+    expect((error as ApiError).status).toBe(409);
   });
 
   it('falls back to the error code when the backend omits a message', async () => {
