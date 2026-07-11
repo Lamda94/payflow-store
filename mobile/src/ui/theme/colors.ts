@@ -8,4 +8,5 @@ export const colors = {
   textSecondary: '#9ca3af',
   danger: '#f87171',
   success: '#34d399',
+  shadow: '#000000',
 };
