@@ -2,9 +2,10 @@
 
 Prueba técnica — tienda con checkout de pago con tarjeta de crédito.
 
-**Stack**: NestJS 11 · TypeScript · TypeORM · PostgreSQL · React Native (próximamente)  
-**Arquitectura**: Hexagonal (Ports & Adapters)  
-**Deploy**: VPS OVH · Docker Compose · Cloudflare Full TLS · GHCR · GitHub Actions
+**Stack**: NestJS 11 · TypeScript · TypeORM · PostgreSQL · React Native 0.86 · Redux Toolkit  
+**Arquitectura**: Hexagonal (Ports & Adapters) en backend · capas `domain → store → services → ui` en mobile  
+**Deploy**: VPS OVH · Docker Compose · Cloudflare Full TLS · GHCR · GitHub Actions  
+**APK firmado listo para instalar**: [`mobile/app-release.apk`](mobile/app-release.apk)
 
 ---
 
@@ -118,7 +119,7 @@ El servicio `api` levanta con hot-reload. Cualquier cambio en `src/` recarga aut
 ```bash
 cd backend
 npm ci
-npm test              # unit tests (118 tests)
+npm test              # unit tests (121 tests)
 npm run test:cov      # cobertura con umbral global >= 80%
 ```
 
@@ -137,16 +138,17 @@ DB_HOST=localhost DB_PORT=5439 DB_NAME=payflow_e2e DB_USER=payflow DB_PASSWORD= 
 docker stop payflow_e2e_pg
 ```
 
-### Resultados de cobertura
+### Resultados de cobertura (121 tests unit + 8 e2e)
 
 | Métrica | Umbral | Resultado |
 |---------|--------|-----------|
-| Statements | 80% | > 80% |
-| Branches | 80% | > 80% |
-| Functions | 80% | > 80% |
-| Lines | 80% | > 80% |
+| Statements | 80% | 98.52% |
+| Branches | 80% | 88.63% |
+| Functions | 80% | 98.82% |
+| Lines | 80% | 98.44% |
 
 Reporte completo disponible en `backend/coverage/` tras ejecutar `npm run test:cov`.
+El umbral está configurado en Jest y el CI falla si baja del 80%.
 
 ---
 
@@ -214,13 +216,16 @@ corre las migraciones (`migration:run:prod`) y levanta la nueva imagen.
 
 ## Mobile
 
-React Native (bare CLI) + Redux Toolkit + redux-persist encriptado. Documentación completa en [`mobile/README.md`](mobile/README.md).
+React Native (bare CLI) + Redux Toolkit + redux-persist encriptado (AES + Keychain/Keystore). Documentación completa en [`mobile/README.md`](mobile/README.md).
 
-**Flujo**: Splash → Home (catálogo) → Detalle del producto → Checkout con backdrop → Card Info → Payment Summary → Resultado.
+**Flujo**: Splash → Home (catálogo) → Detalle del producto → Checkout con backdrop → Card Info → Payment Summary → Resultado con recibo completo. Además: historial de compras persistido encriptado (accesible desde el header del Home) y recuperación automática de pagos interrumpidos.
+
+**Cobertura**: 209 tests · 98.32% statements / 93.16% branches (umbral ≥ 80%; detalle por capa en el README de mobile).
 
 | Workflow | Trigger | Pasos |
 |----------|---------|-------|
 | `mobile.yml` | PR/push en `mobile/**` | lint → test:cov (umbral ≥ 80%) · assembleDebug |
 | `mobile.yml` | push a `main` | + assembleRelease firmado (requiere secrets de keystore) |
 
-El APK release firmado se genera en CI y queda como artifact en el run de `main`.
+El APK release firmado está commiteado en [`mobile/app-release.apk`](mobile/app-release.apk) listo para instalar,
+y además se genera en CI como artifact en cada run de `main`.

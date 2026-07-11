@@ -25,6 +25,7 @@ mobile/src/
 │   └── api.ts         # interfaz PayflowApi + notImplementedApi (para tests)
 └── ui/
     ├── screens/       # SplashScreen · HomeScreen · ProductDetailScreen · CheckoutScreen
+    │                  # HistoryScreen (historial de compras con detalle expandible)
     ├── components/    # Backdrop · CardInfoForm · PaymentSummaryView · PaymentResultView
     │                  # ProductCard · QuantityStepper · LabeledInput · Toast · ErrorBoundary
     └── theme/         # colors · spacing · typography (tokens centralizados, sin hardcode)
@@ -40,12 +41,15 @@ mobile/src/
 ```
 Splash → Home (catálogo) → Detalle del producto (cantidad) →
 Checkout (resumen + backdrop) → Card Info → Payment Summary →
-Processing → Resultado (APPROVED / DECLINED)
+Processing → Resultado (APPROVED / DECLINED, con recibo completo)
 ```
 
 - El backdrop (pantalla 4–6) implementa el patrón Material Design de capa trasera/delantera deslizable.
-- El estado de cada transacción se persiste encriptado; si la app cierra con un pago PENDING, al reabrir retoma el polling automáticamente.
+- El **resultado** muestra un recibo completo: producto × cantidad, monto, tarjeta (marca + últimos 4, solo desde memoria), fecha, reference y estado.
+- **Historial de compras**: las transacciones finalizadas quedan en el estado persistido (encriptado) y se consultan desde el icono 🧾 del header del Home; cada compra se expande al tocarla para ver el detalle. Sin backend: solo estado local.
+- El estado de cada transacción se persiste encriptado; si la app cierra con un pago PENDING, al reabrir retoma el polling automáticamente. Si la respuesta de un pago se pierde, el siguiente intento recupera el resultado real (ver nota de tarjetas más abajo).
 - Los datos de tarjeta viven **solo en memoria** (`checkoutSlice`, en blacklist de persist). Nunca se persisten ni se loguean.
+- El Home renderiza su propio header (título + iconos de historial y carrito con badge): los botones nativos de `headerRight` no responden en Android con la Nueva Arquitectura (bug abierto de react-native-screens).
 
 ---
 
@@ -90,16 +94,16 @@ npm test              # suite completa (unit + componentes)
 npm run test:cov      # con reporte de cobertura (umbral global ≥ 80%)
 ```
 
-### Resultados de cobertura
+### Resultados de cobertura (209 tests)
 
 | Métrica | Umbral | Resultado |
 |---------|--------|-----------|
-| Statements | 80% | > 96% |
-| Branches | 80% | > 87% |
-| Functions | 80% | > 94% |
-| Lines | 80% | > 96% |
+| Statements | 80% | 98.32% |
+| Branches | 80% | 93.16% |
+| Functions | 80% | 98.66% |
+| Lines | 80% | 98.50% |
 
-Cobertura por capa (última ejecución en CI):
+Cobertura por capa (última ejecución):
 
 | Capa | Statements | Branches | Functions | Lines |
 |------|-----------|----------|-----------|-------|
@@ -109,9 +113,9 @@ Cobertura por capa (última ejecución en CI):
 | `store/persist/` | 100% | 100% | 100% | 100% |
 | `navigation/` | 100% | 100% | 100% | 100% |
 | `ui/theme/` | 100% | 100% | 100% | 100% |
-| `ui/screens/` | 98.4% | 97.2% | 94.7% | 98.4% |
-| `ui/components/` | 96.8% | 88.0% | 97.1% | 96.8% |
-| `services/` | 96.3% | 100% | 90.9% | 100% |
+| `ui/screens/` | 96.7% | 95.0% | 96.7% | 96.6% |
+| `ui/components/` | 97.4% | 88.0% | 100% | 97.3% |
+| `services/` | 96.7% | 100% | 91.7% | 100% |
 | `store/` | 100% | 88.9% | 100% | 100% |
 
 Reporte completo disponible en `mobile/coverage/` tras ejecutar `npm run test:cov`.  
@@ -127,8 +131,8 @@ El umbral está configurado en `jest.config.js` y el CI falla si baja del 80%.
 | `store/persist/` | `encryptedTransform` (encrypt/decrypt), `keychain` (get/create key) |
 | `store/` | `initStore`, `StoreProvider`, ciclo completo de pago |
 | `services/` | `httpApi` (fetch real con mocks), `api` (contrato) |
-| `ui/components/` | Backdrop, CardInfoForm, CardBrandLogo, LabeledInput, PaymentProcessingView, PaymentResultView, PaymentSummaryView, ProductCard, QuantityStepper, Toast, ErrorBoundary |
-| `ui/screens/` | HomeScreen, ProductDetailScreen, CheckoutScreen, SplashScreen |
+| `ui/components/` | Backdrop, CardInfoForm, CardBrandLogo, LabeledInput, PaymentProcessingView, PaymentResultView (recibo + recuperación de pagos huérfanos), PaymentSummaryView, ProductCard, QuantityStepper, Toast, ErrorBoundary |
+| `ui/screens/` | HomeScreen (header propio + accesos), ProductDetailScreen, CheckoutScreen, SplashScreen, HistoryScreen (lista, detalle expandible, estado vacío, fallback sin metadatos) |
 | `navigation/` | RootNavigator |
 
 ---
@@ -154,6 +158,8 @@ Titular: cualquier nombre · CVC: cualquier 3 dígitos · Expiración: cualquier
 ---
 
 ## Build Android
+
+> **APK release firmado listo para instalar**: [`app-release.apk`](app-release.apk) (commiteado en el repo, requisito de la prueba).
 
 ### Debug (CI en cada PR)
 
@@ -202,3 +208,5 @@ En CI (push a `main`), el job `android-release` lo construye automáticamente us
 | **`shadowColor` en `colors.shadow`** | Token de tema para evitar literales hardcodeados en componentes |
 | **Timeout de pago de 65 s** | El `/pay` tarda 7–20 s (polling síncrono al PSP); debe superar el timeout del reverse proxy (60 s) para que el cliente nunca abandone antes que el servidor. Con 15 s la app abortaba mientras el backend finalizaba el pago igual |
 | **Recuperación de `TRANSACTION_ALREADY_PROCESSED`** | Si el resultado de un pago se pierde (timeout), la transacción quedó finalizada en el backend; ante el 409 la app consulta el estado real y muestra el resultado en vez de dejar al usuario en bucle sobre el botón Pay |
+| **Historial 100% local (encriptado)** | Un endpoint `GET /transactions?email=` sin autenticación expondría las compras de cualquier cliente; el historial se sirve del estado persistido con AES, coherente con el requisito de almacenamiento seguro |
+| **Header propio en Home** | Los botones de `headerRight` del native-stack no responden en Android con la Nueva Arquitectura (bug abierto de react-native-screens); el header custom es un View normal donde el touch funciona |
