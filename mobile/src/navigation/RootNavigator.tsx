@@ -5,6 +5,7 @@ import { SplashScreen } from '../ui/screens/SplashScreen';
 import { HomeScreen } from '../ui/screens/HomeScreen';
 import { ProductDetailScreen } from '../ui/screens/ProductDetailScreen';
 import { CheckoutScreen } from '../ui/screens/CheckoutScreen';
+import { HistoryScreen } from '../ui/screens/HistoryScreen';
 import { colors } from '../ui/theme';
 import type { RootStackParamList } from './types';
 
@@ -22,13 +23,21 @@ export function RootNavigator() {
         }}
       >
         <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'PayFlow Store' }} />
+        {/* Home renders its own header (see HomeScreen) because native
+            headerRight buttons don't respond on Android with the New
+            Architecture. */}
+        <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
         <Stack.Screen
           name="ProductDetail"
           component={ProductDetailScreen}
           options={{ title: 'Product' }}
         />
         <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ title: 'Checkout' }} />
+        <Stack.Screen
+          name="History"
+          component={HistoryScreen}
+          options={{ title: 'Purchase history' }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

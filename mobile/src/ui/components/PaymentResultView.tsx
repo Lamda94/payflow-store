@@ -32,9 +32,17 @@ function formatDate(isoDate: string): string {
   return date.toLocaleString();
 }
 
-function ReceiptRow({ label, value }: { label: string; value: string }) {
+function ReceiptRow({
+  label,
+  value,
+  last = false,
+}: {
+  label: string;
+  value: string;
+  last?: boolean;
+}) {
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, !last && styles.rowDivider]}>
       <Text style={styles.rowLabel}>{label}</Text>
       <Text style={styles.rowValue} numberOfLines={2}>
         {value}
@@ -75,7 +83,16 @@ export function PaymentResultView() {
   }
 
   return (
-    <View testID="payment-result">
+    <View testID="payment-result" style={styles.container}>
+      <View
+        style={[
+          styles.statusCircle,
+          isApproved ? styles.statusCircleSuccess : styles.statusCircleFailure,
+        ]}
+      >
+        <Text style={styles.statusGlyph}>{isApproved ? '✓' : '✕'}</Text>
+      </View>
+
       <Text style={isApproved ? styles.titleSuccess : styles.titleFailure}>
         {isApproved ? 'Payment approved' : 'Payment declined'}
       </Text>
@@ -88,6 +105,10 @@ export function PaymentResultView() {
         </Text>
       )}
 
+      <Text style={styles.heroAmount}>
+        {formatMoney(transaction.amountInCents, transaction.currency)}
+      </Text>
+
       <View style={styles.receipt} testID="payment-receipt">
         {transaction.productName !== undefined && (
           <ReceiptRow
@@ -99,10 +120,6 @@ export function PaymentResultView() {
             }
           />
         )}
-        <ReceiptRow
-          label="Total"
-          value={formatMoney(transaction.amountInCents, transaction.currency)}
-        />
         {cardLast4.length === 4 && (
           <ReceiptRow
             label="Card"
@@ -113,7 +130,24 @@ export function PaymentResultView() {
         )}
         {formattedDate !== '' && <ReceiptRow label="Date" value={formattedDate} />}
         <ReceiptRow label="Reference" value={transaction.reference} />
-        <ReceiptRow label="Status" value={transaction.status} />
+        <View style={styles.row}>
+          <Text style={styles.rowLabel}>Status</Text>
+          <View
+            style={[
+              styles.statusPill,
+              isApproved ? styles.statusPillSuccess : styles.statusPillFailure,
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusPillText,
+                isApproved ? styles.statusPillTextSuccess : styles.statusPillTextFailure,
+              ]}
+            >
+              {transaction.status}
+            </Text>
+          </View>
+        </View>
       </View>
 
       {!isApproved && (
@@ -130,34 +164,70 @@ export function PaymentResultView() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    alignItems: 'stretch',
+  },
+  statusCircle: {
+    alignSelf: 'center',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+    borderWidth: 2,
+  },
+  statusCircleSuccess: {
+    borderColor: colors.success,
+  },
+  statusCircleFailure: {
+    borderColor: colors.danger,
+  },
+  statusGlyph: {
+    fontSize: 30,
+    lineHeight: 36,
+    color: colors.textPrimary,
+  },
   titleSuccess: {
     ...typography.title,
     color: colors.success,
-    marginBottom: spacing.md,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
   },
   titleFailure: {
     ...typography.title,
     color: colors.danger,
-    marginBottom: spacing.md,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
   },
   message: {
     ...typography.body,
     color: colors.textSecondary,
-    marginBottom: spacing.md,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  heroAmount: {
+    ...typography.price,
+    fontSize: 28,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
   },
   receipt: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
     marginBottom: spacing.lg,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingVertical: spacing.xs,
+    alignItems: 'center',
+    paddingVertical: spacing.sm + spacing.xs,
+  },
+  rowDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   rowLabel: {
     ...typography.caption,
@@ -169,6 +239,28 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     flexShrink: 1,
     textAlign: 'right',
+  },
+  statusPill: {
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  statusPillSuccess: {
+    borderColor: colors.success,
+  },
+  statusPillFailure: {
+    borderColor: colors.danger,
+  },
+  statusPillText: {
+    ...typography.caption,
+    fontWeight: '700',
+  },
+  statusPillTextSuccess: {
+    color: colors.success,
+  },
+  statusPillTextFailure: {
+    color: colors.danger,
   },
   primaryButton: {
     backgroundColor: colors.primary,
