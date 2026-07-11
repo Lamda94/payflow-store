@@ -92,15 +92,25 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            // Signing credentials come from environment variables injected by CI
+            // (ANDROID_KEYSTORE_PATH, ANDROID_STORE_PASSWORD, ANDROID_KEY_ALIAS,
+            //  ANDROID_KEY_PASSWORD). Falls back to the debug keystore when the
+            // variables are absent so that assembleRelease still works locally
+            // without setup (the resulting APK is debug-signed but buildable).
+            def ksPath = System.getenv('ANDROID_KEYSTORE_PATH')
+            storeFile ksPath ? file(ksPath) : file('debug.keystore')
+            storePassword System.getenv('ANDROID_STORE_PASSWORD') ?: 'android'
+            keyAlias System.getenv('ANDROID_KEY_ALIAS') ?: 'androiddebugkey'
+            keyPassword System.getenv('ANDROID_KEY_PASSWORD') ?: 'android'
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
