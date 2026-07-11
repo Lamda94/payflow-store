@@ -7,19 +7,22 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StoreProvider } from './src/store/StoreProvider';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { ErrorBoundary } from './src/ui/components/ErrorBoundary';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
 
   return (
-    <GestureHandlerRootView style={styles.flex}>
-      <SafeAreaProvider>
-        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-        <StoreProvider>
-          <RootNavigator />
-        </StoreProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={styles.flex}>
+        <SafeAreaProvider>
+          <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+          <StoreProvider>
+            <RootNavigator />
+          </StoreProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
 
