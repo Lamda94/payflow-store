@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { selectCart } from '../../store/slices/cartSlice';
+import { selectCart, selectCartProduct } from '../../store/slices/cartSlice';
 import { goToResult, goToSummary, selectCardDraft, selectCustomerEmail } from '../../store/slices/checkoutSlice';
 import {
   createTransaction,
@@ -54,6 +54,7 @@ function getErrorCode(error: unknown): string | undefined {
 export function PaymentProcessingView({ onError }: Props) {
   const dispatch = useAppDispatch();
   const cart = useAppSelector(selectCart);
+  const cartProduct = useAppSelector(selectCartProduct);
   const customerEmail = useAppSelector(selectCustomerEmail);
   const card = useAppSelector(selectCardDraft);
   const currentTransaction = useAppSelector(selectCurrentTransaction);
@@ -83,6 +84,7 @@ export function PaymentProcessingView({ onError }: Props) {
               productId: cart.productId as string,
               quantity: cart.quantity,
               customerEmail,
+              productName: cartProduct?.name,
             }),
           ).unwrap();
           transactionId = created.id;

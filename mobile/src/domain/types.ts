@@ -17,4 +17,8 @@ export interface TransactionRecord {
   amountInCents: number;
   currency: string;
   createdAt: string;
+  // Optional: absent in records persisted by earlier app versions, so the
+  // receipt/history UI must tolerate their absence. Never includes card data.
+  productName?: string;
+  quantity?: number;
 }
