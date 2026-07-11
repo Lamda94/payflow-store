@@ -167,6 +167,74 @@ describe('PaymentProcessingView', () => {
     expect(onError).toHaveBeenCalledWith('Insufficient stock: requested 1, available 0');
   });
 
+  it('recovers the real outcome when the backend says the transaction was already processed', async () => {
+    // An earlier pay attempt finalized the transaction server-side but its
+    // response never arrived (client timeout). Re-paying yields 409
+    // TRANSACTION_ALREADY_PROCESSED — the view must fetch the actual status
+    // and advance to result instead of looping the user on the Pay button.
+    const alreadyProcessed = Object.assign(
+      new Error('Transaction already processed: tx1'),
+      { code: 'TRANSACTION_ALREADY_PROCESSED' },
+    );
+    const api: Partial<PayflowApi> = {
+      createTransaction: () =>
+        Promise.resolve({
+          transactionId: 'tx1',
+          reference: 'ref1',
+          amountInCents: 28900000,
+          currency: 'COP',
+        }),
+      payTransaction: () => Promise.reject(alreadyProcessed),
+      getTransactionStatus: () =>
+        Promise.resolve({
+          id: 'tx1',
+          status: 'APPROVED',
+          amountInCents: 28900000,
+          currency: 'COP',
+          createdAt: '2026-07-10T00:00:00.000Z',
+        }),
+    };
+    const store = createTestStore(api);
+    setupCheckoutState(store);
+    const onError = jest.fn();
+
+    await render(<PaymentProcessingView onError={onError} />, { wrapper: storeWrapper(store) });
+
+    await waitFor(() => {
+      expect(selectCheckoutStep(store.getState())).toBe('result');
+    });
+    expect(selectCurrentTransaction(store.getState())?.status).toBe('APPROVED');
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the error path when the already-processed recovery fetch also fails', async () => {
+    const alreadyProcessed = Object.assign(
+      new Error('Transaction already processed: tx1'),
+      { code: 'TRANSACTION_ALREADY_PROCESSED' },
+    );
+    const api: Partial<PayflowApi> = {
+      createTransaction: () =>
+        Promise.resolve({
+          transactionId: 'tx1',
+          reference: 'ref1',
+          amountInCents: 28900000,
+          currency: 'COP',
+        }),
+      payTransaction: () => Promise.reject(alreadyProcessed),
+      getTransactionStatus: () => Promise.reject(new Error('Network request failed')),
+    };
+    const store = createTestStore(api);
+    setupCheckoutState(store);
+    const onError = jest.fn();
+
+    await render(<PaymentProcessingView onError={onError} />, { wrapper: storeWrapper(store) });
+
+    await waitFor(() => {
+      expect(selectCheckoutStep(store.getState())).toBe('summary');
+    });
+    expect(onError).toHaveBeenCalledWith('Transaction already processed: tx1');
+  });
+
   it('reports a network error and reverts to summary when payTransaction fails', async () => {
     const api: Partial<PayflowApi> = {
       createTransaction: () =>

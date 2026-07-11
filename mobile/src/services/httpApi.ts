@@ -1,5 +1,5 @@
 import type { Product } from '../domain/types';
-import { API_BASE_URL, REQUEST_TIMEOUT_MS } from './config';
+import { API_BASE_URL, PAY_REQUEST_TIMEOUT_MS, REQUEST_TIMEOUT_MS } from './config';
 import type {
   CardPaymentInput,
   CreateTransactionInput,
@@ -14,9 +14,29 @@ interface ErrorBody {
   message?: string;
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+/**
+ * Carries the backend's machine-readable error `code` (e.g.
+ * TRANSACTION_ALREADY_PROCESSED). createAsyncThunk's SerializedError copies
+ * `code` through, so thunk consumers can branch on it without importing this.
+ */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly code?: string,
+    readonly status?: number,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+async function request<T>(
+  path: string,
+  init?: RequestInit,
+  timeoutMs: number = REQUEST_TIMEOUT_MS,
+): Promise<T> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   let response: Response;
   try {
@@ -38,8 +58,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const errorBody = (body ?? {}) as ErrorBody;
-    throw new Error(
+    throw new ApiError(
       errorBody.message ?? errorBody.code ?? `Request failed with status ${response.status}`,
+      errorBody.code,
+      response.status,
     );
   }
 
@@ -57,10 +79,14 @@ export const httpApi: PayflowApi = {
     }),
 
   payTransaction: (transactionId: string, card: CardPaymentInput) =>
-    request<PayTransactionResult>(`/transactions/${transactionId}/pay`, {
-      method: 'POST',
-      body: JSON.stringify(card),
-    }),
+    request<PayTransactionResult>(
+      `/transactions/${transactionId}/pay`,
+      {
+        method: 'POST',
+        body: JSON.stringify(card),
+      },
+      PAY_REQUEST_TIMEOUT_MS,
+    ),
 
   getTransactionStatus: (transactionId: string) =>
     request<TransactionStatusResult>(`/transactions/${transactionId}`),
