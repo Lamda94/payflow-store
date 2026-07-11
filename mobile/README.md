@@ -94,10 +94,25 @@ npm run test:cov      # con reporte de cobertura (umbral global ≥ 80%)
 
 | Métrica | Umbral | Resultado |
 |---------|--------|-----------|
-| Statements | 80% | > 80% |
-| Branches | 80% | > 80% |
-| Functions | 80% | > 80% |
-| Lines | 80% | > 80% |
+| Statements | 80% | > 96% |
+| Branches | 80% | > 87% |
+| Functions | 80% | > 94% |
+| Lines | 80% | > 96% |
+
+Cobertura por capa (última ejecución en CI):
+
+| Capa | Statements | Branches | Functions | Lines |
+|------|-----------|----------|-----------|-------|
+| `domain/` | 100% | 100% | 100% | 100% |
+| `domain/card/` | 100% | 100% | 100% | 100% |
+| `store/slices/` | 100% | 100% | 100% | 100% |
+| `store/persist/` | 100% | 100% | 100% | 100% |
+| `navigation/` | 100% | 100% | 100% | 100% |
+| `ui/theme/` | 100% | 100% | 100% | 100% |
+| `ui/screens/` | 98.4% | 97.2% | 94.7% | 98.4% |
+| `ui/components/` | 96.8% | 88.0% | 97.1% | 96.8% |
+| `services/` | 96.3% | 100% | 90.9% | 100% |
+| `store/` | 100% | 88.9% | 100% | 100% |
 
 Reporte completo disponible en `mobile/coverage/` tras ejecutar `npm run test:cov`.  
 El umbral está configurado en `jest.config.js` y el CI falla si baja del 80%.
