@@ -23,9 +23,11 @@ const initialState: TransactionState = {
 
 export const createTransaction = createAsyncThunk<
   TransactionRecord,
-  CreateTransactionInput,
+  // productName is receipt/history metadata for the local record only — the
+  // API input stays exactly CreateTransactionInput.
+  CreateTransactionInput & { productName?: string },
   { extra: PayflowApi }
->('transaction/create', async (input, { extra }) => {
+>('transaction/create', async ({ productName, ...input }, { extra }) => {
   const result = await extra.createTransaction(input);
   return {
     id: result.transactionId,
@@ -34,6 +36,8 @@ export const createTransaction = createAsyncThunk<
     amountInCents: result.amountInCents,
     currency: result.currency,
     createdAt: new Date().toISOString(),
+    productName,
+    quantity: input.quantity,
   };
 });
 
@@ -57,15 +61,19 @@ export const fetchTransactionStatus = createAsyncThunk<
 >('transaction/fetchStatus', async (transactionId, { extra, getState }) => {
   const result = await extra.getTransactionStatus(transactionId);
   const current = getState().transaction.current;
+  // GET /transactions/:id doesn't echo the reference nor the local
+  // receipt metadata; keep what we already have for this transaction
+  // (set when it was created).
+  const isSame = current?.id === result.id;
   return {
     id: result.id,
-    // GET /transactions/:id doesn't echo the reference; keep the one we
-    // already have for this transaction (set when it was created).
-    reference: current?.id === result.id ? current.reference : '',
+    reference: isSame ? current.reference : '',
     status: result.status,
     amountInCents: result.amountInCents,
     currency: result.currency,
     createdAt: result.createdAt,
+    productName: isSame ? current.productName : undefined,
+    quantity: isSame ? current.quantity : undefined,
   };
 });
 

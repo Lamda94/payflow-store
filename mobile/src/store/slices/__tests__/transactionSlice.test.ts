@@ -156,7 +156,44 @@ describe('transactionSlice', () => {
       amountInCents: 1000,
       currency: 'COP',
       createdAt: '2026-07-10T00:00:00.000Z',
+      quantity: 1,
     });
+  });
+
+  it('keeps the receipt metadata (productName, quantity) through create and status refresh', async () => {
+    const store = makeStore({
+      createTransaction: () =>
+        Promise.resolve({
+          transactionId: 'tx1',
+          reference: 'ref1',
+          amountInCents: 2000,
+          currency: 'COP',
+        }),
+      getTransactionStatus: () =>
+        Promise.resolve({
+          id: 'tx1',
+          status: 'APPROVED',
+          amountInCents: 2000,
+          currency: 'COP',
+          createdAt: '2026-07-10T00:00:00.000Z',
+        }),
+    });
+
+    await store.dispatch(
+      createTransaction({
+        productId: 'p1',
+        quantity: 2,
+        customerEmail: 'a@b.co',
+        productName: 'Portable SSD 1TB',
+      }),
+    );
+    expect(selectCurrentTransaction(store.getState())?.productName).toBe('Portable SSD 1TB');
+    expect(selectCurrentTransaction(store.getState())?.quantity).toBe(2);
+
+    await store.dispatch(fetchTransactionStatus('tx1'));
+    const refreshed = selectCurrentTransaction(store.getState());
+    expect(refreshed?.productName).toBe('Portable SSD 1TB');
+    expect(refreshed?.quantity).toBe(2);
   });
 
   it('fetchTransactionStatus falls back to an empty reference when there is no matching current transaction', async () => {
