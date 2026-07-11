@@ -23,7 +23,10 @@ export function RootNavigator() {
         }}
       >
         <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'PayFlow Store' }} />
+        {/* Home renders its own header (see HomeScreen) because native
+            headerRight buttons don't respond on Android with the New
+            Architecture. */}
+        <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
         <Stack.Screen
           name="ProductDetail"
           component={ProductDetailScreen}

@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -23,6 +24,7 @@ export function HomeScreen({ navigation }: Props) {
   const error = useAppSelector(selectProductsError);
   const cart = useAppSelector(selectCart);
   const history = useAppSelector(selectTransactionHistory);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (status === 'idle') {
@@ -79,24 +81,42 @@ export function HomeScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
+      {/* Custom header rendered in the screen body (native header disabled
+          for this route): a native-stack headerRight button doesn't fire
+          onPress on Android with the New Architecture (open
+          react-native-screens bug), so the action icons live in a plain
+          View header where touches work normally. */}
+      <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
+        <Text style={styles.headerTitle}>PayFlow Store</Text>
+        <View style={styles.headerActions}>
+          {history.length > 0 && (
+            <Pressable
+              testID="header-history-button"
+              accessibilityRole="button"
+              accessibilityLabel="Purchase history"
+              style={styles.headerButton}
+              onPress={() => navigation.navigate('History')}
+            >
+              <Text style={styles.headerIcon}>🧾</Text>
+            </Pressable>
+          )}
+          {cart.quantity > 0 && (
+            <Pressable
+              testID="header-cart-button"
+              accessibilityRole="button"
+              accessibilityLabel={`Cart with ${cart.quantity} items`}
+              style={styles.headerButton}
+              onPress={() => navigation.navigate('Checkout')}
+            >
+              <Text style={styles.headerIcon}>🛒</Text>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{cart.quantity}</Text>
+              </View>
+            </Pressable>
+          )}
+        </View>
+      </View>
       {renderContent()}
-      {/* A native-stack headerRight button doesn't fire onPress on Android
-          with the New Architecture (open react-native-screens bug) — the
-          cart entry point lives in the screen body instead, as a FAB. */}
-      {cart.quantity > 0 && (
-        <Pressable testID="cart-fab" style={styles.cartFab} onPress={() => navigation.navigate('Checkout')}>
-          <Text style={styles.cartFabText}>Cart ({cart.quantity})</Text>
-        </Pressable>
-      )}
-      {history.length > 0 && (
-        <Pressable
-          testID="history-fab"
-          style={styles.historyFab}
-          onPress={() => navigation.navigate('History')}
-        >
-          <Text style={styles.historyFabText}>History</Text>
-        </Pressable>
-      )}
     </View>
   );
 }
@@ -139,44 +159,45 @@ const styles = StyleSheet.create({
     color: colors.background,
     fontWeight: '600',
   },
-  cartFab: {
-    position: 'absolute',
-    right: spacing.md,
-    bottom: spacing.lg,
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.sm,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
     paddingHorizontal: spacing.md,
-    borderRadius: 24,
-    elevation: 4,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    paddingBottom: spacing.sm,
   },
-  cartFabText: {
-    ...typography.body,
-    color: colors.background,
+  headerTitle: {
+    ...typography.subtitle,
+    color: colors.textPrimary,
     fontWeight: '700',
   },
-  historyFab: {
-    position: 'absolute',
-    left: spacing.md,
-    bottom: spacing.lg,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: 24,
-    elevation: 4,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  historyFabText: {
-    ...typography.body,
-    color: colors.textPrimary,
+  headerButton: {
+    marginLeft: spacing.sm,
+    padding: spacing.xs,
+  },
+  headerIcon: {
+    fontSize: 22,
+  },
+  badge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: {
+    color: colors.background,
+    fontSize: 10,
     fontWeight: '700',
   },
 });

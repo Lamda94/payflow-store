@@ -96,7 +96,17 @@ describe('HomeScreen', () => {
     expect(navigation.navigate).toHaveBeenCalledWith('ProductDetail', { productId: 'p1' });
   });
 
-  it('hides the cart FAB when the cart is empty', async () => {
+  it('renders its own header with the store title', async () => {
+    const store = createTestStore({ listProducts: () => Promise.resolve(products) });
+    const { getByText } = await render(
+      <HomeScreen navigation={makeNavigation()} route={{ key: 'Home', name: 'Home' } as never} />,
+      { wrapper: storeWrapper(store) },
+    );
+
+    expect(getByText('PayFlow Store')).toBeTruthy();
+  });
+
+  it('hides the header cart button when the cart is empty', async () => {
     const store = createTestStore({ listProducts: () => Promise.resolve(products) });
     const { getByTestId, queryByTestId } = await render(
       <HomeScreen navigation={makeNavigation()} route={{ key: 'Home', name: 'Home' } as never} />,
@@ -105,11 +115,11 @@ describe('HomeScreen', () => {
 
     await waitFor(() => {
       expect(getByTestId('home-product-list')).toBeTruthy();
-      expect(queryByTestId('cart-fab')).toBeNull();
+      expect(queryByTestId('header-cart-button')).toBeNull();
     });
   });
 
-  it('shows the cart FAB with the quantity and navigates to Checkout when pressed', async () => {
+  it('shows the cart icon with a quantity badge and navigates to Checkout when pressed', async () => {
     const store = createTestStore({ listProducts: () => Promise.resolve(products) });
     const navigation = makeNavigation();
 
@@ -123,16 +133,16 @@ describe('HomeScreen', () => {
     });
 
     await waitFor(() => {
-      expect(getByTestId('cart-fab')).toBeTruthy();
+      expect(getByTestId('header-cart-button')).toBeTruthy();
     });
-    expect(getByText('Cart (2)')).toBeTruthy();
+    expect(getByText('2')).toBeTruthy();
 
-    fireEvent.press(getByTestId('cart-fab'));
+    fireEvent.press(getByTestId('header-cart-button'));
 
     expect(navigation.navigate).toHaveBeenCalledWith('Checkout');
   });
 
-  it('hides the history FAB when there are no archived purchases', async () => {
+  it('hides the header history button when there are no archived purchases', async () => {
     const store = createTestStore({ listProducts: () => Promise.resolve(products) });
     const { getByTestId, queryByTestId } = await render(
       <HomeScreen navigation={makeNavigation()} route={{ key: 'Home', name: 'Home' } as never} />,
@@ -141,11 +151,11 @@ describe('HomeScreen', () => {
 
     await waitFor(() => {
       expect(getByTestId('home-product-list')).toBeTruthy();
-      expect(queryByTestId('history-fab')).toBeNull();
+      expect(queryByTestId('header-history-button')).toBeNull();
     });
   });
 
-  it('shows the history FAB and navigates to History when pressed', async () => {
+  it('shows the history icon and navigates to History when pressed', async () => {
     const store = createTestStore({ listProducts: () => Promise.resolve(products) });
     const navigation = makeNavigation();
 
@@ -170,10 +180,10 @@ describe('HomeScreen', () => {
     });
 
     await waitFor(() => {
-      expect(getByTestId('history-fab')).toBeTruthy();
+      expect(getByTestId('header-history-button')).toBeTruthy();
     });
 
-    fireEvent.press(getByTestId('history-fab'));
+    fireEvent.press(getByTestId('header-history-button'));
 
     expect(navigation.navigate).toHaveBeenCalledWith('History');
   });
