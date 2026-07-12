@@ -183,36 +183,29 @@ Ver `backend/.env.example` para la lista completa.
 
 | Secreto | Uso |
 |---------|-----|
-| `VPS_HOST` | IP del VPS OVH |
-| `VPS_PORT` | Puerto SSH (2222) |
-| `VPS_USER` | Usuario SSH de deploy (`ubuntu`) |
-| `VPS_SSH_KEY` | Clave privada SSH (ED25519) |
+| `VPS_HOST` | Host del servidor de deploy |
+| `VPS_PORT` | Puerto SSH |
+| `VPS_USER` | Usuario SSH de deploy |
+| `VPS_SSH_KEY` | Clave privada SSH |
 
 `GITHUB_TOKEN` se usa automáticamente para autenticarse en GHCR.
 
 ---
 
-## Infraestructura del VPS
+## Despliegue en producción
 
-- **OS**: Ubuntu 25.04 en OVH Cloud
-- **Reverse proxy**: nginx corriendo como contenedor `sara_nginx` (compartido entre proyectos)
-- **TLS**: Certificado autofirmado + Cloudflare modo Full (Cloudflare termina TLS hacia el cliente)
-- **DNS**: `payflow.luismendezdev.online` → proxied en Cloudflare → IP del VPS
-- **Red Docker**: `sara_sara_net` — red compartida entre todos los proyectos del VPS
-- **Compose del proyecto**: `/opt/payflow-store/docker-compose.yml`
-- **Nginx config**: `/opt/payflow-store/deploy/payflow.conf` (montado en sara_nginx)
+**API en vivo**: [`https://payflow.luismendezdev.online`](https://payflow.luismendezdev.online/health) — Swagger UI en [`/docs`](https://payflow.luismendezdev.online/docs).
 
-### Setup inicial (ya ejecutado)
+Arquitectura de alto nivel:
 
-El directorio `/opt/payflow-store/` ya está creado en el VPS con:
-- `docker-compose.yml` — payflow_api + payflow_postgres (en `sara_sara_net`)
-- `deploy/payflow.conf` — nginx config montada en `sara_nginx`
-- `deploy/certs/` — certificado autofirmado para `payflow.luismendezdev.online`
-- `.env` — variables de entorno (completar PSP keys)
+```
+Cliente → Cloudflare (TLS + proxy) → nginx (reverse proxy) → API (contenedor Docker)
+                                                              └→ PostgreSQL (contenedor, sin puertos publicados)
+```
 
-A partir del primer setup, los deploys son automaticos via GitHub Actions al hacer push a `main`:
-el pipeline sincroniza `backend/deploy/docker-compose.prod.yml` y `backend/deploy/payflow.conf` al VPS,
-corre las migraciones (`migration:run:prod`) y levanta la nueva imagen.
+- API y base de datos corren en contenedores Docker sin puertos expuestos al exterior; solo nginx enruta hacia la API.
+- Los deploys son automáticos vía GitHub Actions en cada push a `main` con cambios en `backend/**`: build de imagen → push a GHCR → sincronización al servidor → migraciones → recreación del servicio.
+- Las llaves del PSP y credenciales de base de datos viven únicamente en el `.env` del servidor y en GitHub Secrets — nunca en el repositorio.
 
 ## Mobile
 
