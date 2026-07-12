@@ -7,11 +7,13 @@ function makeNavigation() {
 }
 
 describe('SplashScreen', () => {
-  it('renders the app branding', async () => {
-    const { getByText } = await render(
+  it('renders the app branding with the logo', async () => {
+    const { getByText, getByTestId } = await render(
       <SplashScreen navigation={makeNavigation()} route={{ key: 'Splash', name: 'Splash' } as never} />,
     );
     expect(getByText('PayFlow Store')).toBeTruthy();
+    expect(getByText('Checkout made simple')).toBeTruthy();
+    expect(getByTestId('splash-logo')).toBeTruthy();
   });
 
   it('replaces itself with Home after the splash duration', async () => {
