@@ -4,7 +4,7 @@ Prueba técnica — tienda con checkout de pago con tarjeta de crédito.
 
 **Stack**: NestJS 11 · TypeScript · TypeORM · PostgreSQL · React Native 0.86 · Redux Toolkit  
 **Arquitectura**: Hexagonal (Ports & Adapters) en backend · capas `domain → store → services → ui` en mobile  
-**Deploy**: VPS OVH · Docker Compose · Cloudflare Full TLS · GHCR · GitHub Actions  
+**Deploy**: VPS · Docker Compose · Cloudflare Full TLS · GHCR · GitHub Actions  
 **APK firmado listo para instalar**: [`mobile/app-release.apk`](mobile/app-release.apk)
 
 ---
